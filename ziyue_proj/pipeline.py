@@ -12,12 +12,13 @@ from tensorflow.python.client import timeline
 from tensorflow.distribute.cluster_resolver import TFConfigClusterResolver
 from tensorflow.python.ops import collective_ops
 sys.path.append('../')
+sys.path.append('./bert/')
+
 import multiprocessing as mp
-arg_prefix=sys.argv[1]
 
 config_dict =dict()
-if os.path.exists("activate_config.txt"):
-    with open("activate_config.txt", "r") as f:
+if os.path.exists("config.json"):
+    with open("config.json", "r") as f:
         config_dict = json.load(f)
 
 def setup_workers(workers, protocol="grpc"):
@@ -30,8 +31,7 @@ def setup_workers(workers, protocol="grpc"):
         url = "http://{}:3905/{}/restart/{}/{}/{}".format(server.split(':')[0], int(time.time()) + 10, protocol, task_id, param)
         assert urllib.request.urlopen(url).read() == b'ok'
     time.sleep(1)
-activate_graphs=config_dict.get("activate_graphs", ["data/graph1/nccl_dp_graph.pbtxt","data/graph1/grpc_dp_graph.pbtxt","data/graph1/single_graph.pbtxt","data/graph1/best_graph.pbtxt"])
-sinks = config_dict.get("activate_sink", ["Adam"])
+
 devices = config_dict.get("devices", [""])
 
 def model_fn(scope,batch_size):
@@ -40,7 +40,7 @@ def model_fn(scope,batch_size):
     bert_config = modeling.BertConfig.from_json_file("bert/bert_large/bert_config.json")
     model = new_model_fn_builder(bert_config)
     features = {}
-    with tf.name_scope(scope):
+    with tf.variable_scope(scope):
         features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 128)), tf.int32)
         features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 128)), tf.int32)
         features["segment_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 128)), tf.int32)
@@ -61,27 +61,45 @@ class Activater():
         self.vars = []
         self.avg_gradient=[]
         self.apply_grad = []
+        self.instances=[]
+        self.gradients = []
         for i in range(replica_num):
             self.avg_gradient.append([])
             with tf.device(self.devices[i]):
                 scope = "replica_"+str(i)
                 loss =self.model_fn(scope,batch_size)
-                vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=scope)
+                vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope)
                 gradients = tf.compat.v1.gradients(loss, vars,colocate_gradients_with_ops=True)
-                for j,gradient in enumerate(gradients):
-                    sum0 = collective_ops.all_reduce(gradient, replica_num, 0, j, 'Add', 'Id')
-                    self.avg_gradient[i].append(sum0)
+                instance = []
                 self.losses.append(loss)
                 self.vars.append(vars)
+                self.instances.append(instance)
+                self.gradients.append(gradients)
+        #assert(self.instances[0]==self.instances[1])
+        gradient_len = len(self.gradients[0])
+        for i in range(gradient_len):
+            for j in range(replica_num):
+                if self.gradients[j][i] ==None:
+                    continue
+                if i>1:
+                    with tf.control_dependencies([item[last_index] for item in self.gradients]),tf.device(self.devices[j]):
+                        self.gradients[j][i] =collective_ops.all_reduce(self.gradients[j][i], replica_num, 0, i, 'Add', 'Id')
+                else:
+                    with tf.device(self.devices[j]):
+                        self.gradients[j][i] = collective_ops.all_reduce(self.gradients[j][i], replica_num, 0, i, 'Add',
+                                                                         'Id')
+                last_index =i
+
         for i in range(replica_num):
             with tf.device(self.devices[i]):
-                self.apply_grad.append(tf.train.AdamOptimizer(learning_rate=0.01,beta1=0.9,beta2=0.98, epsilon=1e-9).apply_gradients(zip(self.avg_gradient[i],self.vars[i])))
+                self.apply_grad.append(tf.train.AdamOptimizer(learning_rate=0.01,beta1=0.9,beta2=0.98, epsilon=1e-9).apply_gradients(zip(self.gradients[i],self.vars[i])))
 
 
 
     def activate_unit(self,batch_size,replica_num):
         setup_workers(workers, "grpc+verbs")
         tf.reset_default_graph()
+        self.build_model(replica_num, batch_size)
         resolver = TFConfigClusterResolver()
         cluster = resolver.cluster_spec()
         '''
@@ -92,6 +110,8 @@ class Activater():
         config.allow_soft_placement = True  # log_device_placement=True)
         config.gpu_options.allow_growth = True
         '''
+
+
         config = tf.ConfigProto()
         with open("dist_config.pbtxt", "r") as f:
             txt = f.read()
@@ -99,10 +119,14 @@ class Activater():
         server = tf.distribute.Server(cluster, job_name='worker', task_index=0, protocol="grpc+verbs",
                                            config=config)
         target = server.target
+
+
+        init_op = tf.compat.v1.global_variables_initializer()
+
+
         sess = tf.Session(target, config=config)  # , config=tf.ConfigProto(allow_soft_placement=False))
 
-        self.build_model(replica_num,batch_size)
-        init_op = tf.initialize_all_variables()
+
         sess.run(init_op)
         input_dict = None
         graph = tf.get_default_graph()

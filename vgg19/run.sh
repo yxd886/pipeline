@@ -31,6 +31,7 @@ if [ ${local_test} == "true" ]; then
 CUDA_VISIBLE_DEVICES=4,5,6,7 mpirun -np $np --host ${ip_list} --allow-run-as-root -x NCCL_DEBUG=INFO nohup python tf-keras-dapple.py --fake_io=True --model=vgg19 --num_batches=10000 --batch_size=${batch_size} --strategy=none --cross_pipeline=True --pipeline_device_num=${device_num} --micro_batch_num=${batch_num} --job_name=worker --task_index=1 --worker_hosts=${worker_hosts} > ${inst_id}_2.log 2>&1 &
 fi
 
-CUDA_VISIBLE_DEVICES=0,1,2,3 mpirun -np $np --host ${ip_list} --allow-run-as-root -x NCCL_DEBUG=INFO python tf-keras-dapple.py --fake_io=True --model=vgg19 --num_batches=10000 --batch_size=${batch_size} --strategy=none --cross_pipeline=True --pipeline_device_num=${device_num} --micro_batch_num=${batch_num} --num_replica=${replica} --job_name=worker --task_index=0 --worker_hosts=${worker_hosts} #> ${inst_id}.log 2>&1 &
+CUDA_VISIBLE_DEVICES=0,1,2,3 mpirun -np $np --host ${ip_list} --allow-run-as-root -x NCCL_DEBUG=INFO python tf-keras-dapple.py --fake_io=True --model=vgg19
+--num_batches=10000 --batch_size=${batch_size} --strategy=none --cross_pipeline=True --pipeline_device_num=${device_num} --micro_batch_num=${batch_num} --num_replica=${replica} --job_name=worker --task_index=0 --worker_hosts=${worker_hosts} #> ${inst_id}.log 2>&1 &
 fi
 
