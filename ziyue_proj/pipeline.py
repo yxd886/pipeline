@@ -76,20 +76,20 @@ class Activater():
                 self.instances.append(instance)
                 self.gradients.append(gradients)
         #assert(self.instances[0]==self.instances[1])
+        '''
         gradient_len = len(self.gradients[0])
-        for i in range(gradient_len):
+        dependency = []
+        for i in range(gradient_len,0,-1):
+            local_dependency=[]
             for j in range(replica_num):
-                if self.gradients[j][i] ==None:
-                    continue
-                if i>0:
-                    with tf.control_dependencies([item[last_index] for item in self.gradients]),tf.device(self.devices[j]):
-                        self.gradients[j][i] =collective_ops.all_reduce(self.gradients[j][i], replica_num, 0, i, 'Add', 'Id')
-                else:
-                    with tf.device(self.devices[j]):
-                        self.gradients[j][i] = collective_ops.all_reduce(self.gradients[j][i], replica_num, 0, i, 'Add',
-                                                                         'Id')
-                last_index =i
+                if self.gradients[j][i-1] ==None:
+                  continue
+                with tf.control_dependencies(dependency),tf.device(self.devices[j]):
+                    self.gradients[j][i-1] =collective_ops.all_reduce(self.gradients[j][i-1], replica_num, 0, gradient_len-i, 'Add', 'Id')
+                    local_dependency.append(self.gradients[j][i-1])
+            dependency = local_dependency
 
+        '''
         for i in range(replica_num):
             with tf.device(self.devices[i]):
                 self.apply_grad.append(tf.train.AdamOptimizer(learning_rate=0.01,beta1=0.9,beta2=0.98, epsilon=1e-9).apply_gradients(zip(self.gradients[i],self.vars[i])))
@@ -97,7 +97,6 @@ class Activater():
 
 
     def activate_unit(self,batch_size,replica_num):
-        setup_workers(workers, "grpc+verbs")
         tf.reset_default_graph()
         self.build_model(replica_num, batch_size)
         resolver = TFConfigClusterResolver()
@@ -116,6 +115,7 @@ class Activater():
         with open("dist_config.pbtxt", "r") as f:
             txt = f.read()
         pbtf.Parse(txt, config)
+        setup_workers(workers, "grpc+verbs")
         server = tf.distribute.Server(cluster, job_name='worker', task_index=0, protocol="grpc+verbs",
                                            config=config)
         target = server.target
