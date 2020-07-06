@@ -69,8 +69,6 @@ class Activater():
                 scope = "replica_"+str(i)
                 loss =self.model_fn(scope,batch_size)
                 vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope)
-                vars = tf.get_default_graph().get_collection()
-
                 gradients = tf.compat.v1.gradients(loss, vars,colocate_gradients_with_ops=True)
                 instance = []
                 self.losses.append(loss)
@@ -83,7 +81,7 @@ class Activater():
             for j in range(replica_num):
                 if self.gradients[j][i] ==None:
                     continue
-                if i>1:
+                if i>0:
                     with tf.control_dependencies([item[last_index] for item in self.gradients]),tf.device(self.devices[j]):
                         self.gradients[j][i] =collective_ops.all_reduce(self.gradients[j][i], replica_num, 0, i, 'Add', 'Id')
                 else:
