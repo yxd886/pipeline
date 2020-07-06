@@ -1,0 +1,17 @@
+gpu_options {
+  allow_growth: true
+}
+allow_soft_placement: true
+graph_options {
+  rewrite_options {
+    scoped_allocator_optimization: ON
+    scoped_allocator_opts {
+      enable_op: "CollectiveReduce"
+    }
+  }
+}
+experimental {
+  collective_group_leader: "/job:worker/replica:0/task:0"
+  collective_nccl: true
+  collective_deterministic_sequential_execution: true
+}
