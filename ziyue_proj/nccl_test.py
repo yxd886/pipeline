@@ -18,7 +18,7 @@ def setup_workers(workers, protocol="grpc"):
 
 def test_dist():
     ts = []
-    for task_id in (0, 1, 2):
+    for task_id in (0, 1):
         with tf.device('/job:worker/task:{0}/device:GPU:0'.format(task_id)):
             t = tf.Variable([1.0,3.0*task_id], dtype=tf.float32, name='myvar')
             ts.append(t)
@@ -27,13 +27,16 @@ def test_dist():
         sum0 = collective_ops.all_reduce(ts[0], 2, 0, 1, 'Add', 'Id')
     with tf.device('/job:worker/task:1/device:GPU:0'):
         sum1 = collective_ops.all_reduce(ts[1], 2, 0, 1, 'Add', 'Id')
-
-    with tf.control_dependencies([sum0, sum1]):
-        with tf.device('/job:worker/task:0/device:GPU:0'):
-            sumb0 = collective_ops.all_reduce(tf.identity(ts[0]), 2, 0, 2, 'Add', 'Id')
-        with tf.device('/job:worker/task:1/device:GPU:0'):
-            sumb1 = collective_ops.all_reduce(tf.identity(ts[1]), 2, 0, 2, 'Add', 'Id')
-
+    dependency =[sum0,sum1]
+    result = [sum0,sum1]
+    for i in range(20):
+        with tf.control_dependencies(dependency):
+            with tf.device('/job:worker/task:0/device:GPU:0'):
+                sumb0 = collective_ops.all_reduce(tf.identity(ts[0]), 2, 0, i+2, 'Add', 'Id')
+            with tf.device('/job:worker/task:1/device:GPU:0'):
+                sumb1 = collective_ops.all_reduce(tf.identity(ts[1]), 2, 0, i+2, 'Add', 'Id')
+            result.append(sumb0,sumb1)
+            dependency = [sumb0,sumb1]
     resolver = TFConfigClusterResolver()
     cluster = resolver.cluster_spec()
 
@@ -53,7 +56,7 @@ def test_dist():
     sess = tf.compat.v1.Session(server.target, config=sess_config)
     sess.run(tf.compat.v1.global_variables_initializer())
 
-    print('tensor value', sess.run([sum0, sum1, sumb0, sumb1]))
+    print('tensor value', sess.run(result))
 
     with open("graph_def", "w") as f:
         f.write(str(tf.get_default_graph().as_graph_def()))
@@ -71,5 +74,5 @@ clus = dict()
 clus["cluster"] = {"worker": workers}
 clus["task"] = {"type": "worker", "index": 0}
 os.environ["TF_CONFIG"] = json.dumps(clus)
-setup_workers(workers, "grpc+verbs")
+setup_workers(workers, "grpc")
 test_dist()
