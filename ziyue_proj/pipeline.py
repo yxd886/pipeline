@@ -69,6 +69,8 @@ class Activater():
                 scope = "replica_"+str(i)
                 loss =self.model_fn(scope,batch_size)
                 vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope)
+                vars = tf.get_default_graph().get_collection()
+
                 gradients = tf.compat.v1.gradients(loss, vars,colocate_gradients_with_ops=True)
                 instance = []
                 self.losses.append(loss)
