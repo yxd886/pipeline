@@ -2,6 +2,8 @@ import sys
 import tensorflow as tf
 from tensorflow.distribute.cluster_resolver import TFConfigClusterResolver
 from tensorflow.python.ops import collective_ops
+import google.protobuf.text_format as pbtf
+
 tf.logging.set_verbosity('DEBUG')
 def setup_workers(workers, protocol="grpc"):
     import urllib.request
@@ -35,11 +37,15 @@ def test_dist():
     resolver = TFConfigClusterResolver()
     cluster = resolver.cluster_spec()
 
-    dist = tf.distribute.experimental.MultiWorkerMirroredStrategy(
-        tf.distribute.experimental.CollectiveCommunication.NCCL)
+    #dist = tf.distribute.experimental.MultiWorkerMirroredStrategy(
+     #   tf.distribute.experimental.CollectiveCommunication.NCCL)
 
-    sess_config = dist.update_config_proto(tf.ConfigProto())
-    sess_config.ClearField("device_filters")
+    #sess_config = dist.update_config_proto(tf.ConfigProto())
+    #sess_config.ClearField("device_filters")
+    sess_config = tf.ConfigProto()
+    with open("dist_config.pbtxt", "r") as f:
+        txt = f.read()
+    pbtf.Parse(txt, sess_config)
 
     server = tf.distribute.Server(
         cluster, job_name="worker", task_index=0, config=sess_config)
