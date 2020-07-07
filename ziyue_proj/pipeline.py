@@ -84,9 +84,6 @@ class Activater():
         assignment = {item:self.devices[0] for item in scopes}
         with tf.device(device_setter(assignment)):
             loss, outputs, scopes = self.model_fn("Bert", batch_size)
-        operations = tf.get_default_graph().get_operations()
-        for op in operations:
-            print(op.name,op.device)
     def activate_unit(self,batch_size,replica_num):
         tf.reset_default_graph()
         self.build_model(replica_num, batch_size)
