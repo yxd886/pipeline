@@ -53,7 +53,7 @@ class Activater():
         self.devices = devices
         self.micro_batch_num = micro_batch_num
         self.batch_size = batch_size
-        loss, outputs, scopes = self.model_fn(batch_size)
+        loss, outputs, scopes = self.model_fn(None)
         tf.reset_default_graph()
         self.scopes = scopes
         self.outputs = outputs
@@ -105,7 +105,7 @@ class Activater():
         outputs = []
         for i in range(self.micro_batch_num):
             with tf.device(device_setter(assignment,self.devices)):
-                loss, output, scopes = self.model_fn(self.batch_size)
+                loss, output, scopes = self.model_fn(None)
                 losses.append(loss)
                 outputs.append(output[-1])
         self.train_op = tf.train.AdamOptimizer(learning_rate=0.01,beta1=0.9,beta2=0.98, epsilon=1e-9).minimize(tf.add_n(losses))
