@@ -123,6 +123,9 @@ class Activater():
             for i in range(decision[0],decision[1]+1,1):
                 place[i] = 1
             strategy[op] = [1]+place
+        for op in self.graph.get_operations():
+            if op.name not in strategy.keys():
+                strategy[op.name] = [1]+place
 
         import tge
 
