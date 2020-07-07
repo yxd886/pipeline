@@ -111,7 +111,7 @@ class Activater():
         self.train_op = tf.train.AdamOptimizer(learning_rate=0.01,beta1=0.9,beta2=0.98, epsilon=1e-9).minimize(tf.add_n(losses))
 
         init = tf.global_variables_initializer()
-        self.gdef = tf.get_default_graph().as_graph_def(add_shapes=True)
+        self.graph = tf.get_default_graph().as_graph_def(add_shapes=True)
     def change_model(self):
         strategy = {}
         assignment = {self.scopes[i]:[0,1] for i in range(len(self.scopes))}
@@ -127,7 +127,7 @@ class Activater():
         # options = [[0, 1], [1, 0], [0, 2], [2, 0], [1, 1]]
         # strategy = { node.name: [np.random.randint(0, 2)] + options[np.random.randint(0, len(options))] for node in gdef.node }
 
-        g = (tge.TGE(self.gdef, self.devices)
+        g = (tge.TGE(self.graph, self.devices)
              .custom(strategy)
              .replace_placeholder(self.batch_size)
              .use_collective()
