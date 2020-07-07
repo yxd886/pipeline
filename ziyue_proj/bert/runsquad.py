@@ -548,7 +548,7 @@ def _check_is_max_context(doc_spans, cur_span_index, position):
 
 
 def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
-                 use_one_hot_embeddings):
+                 use_one_hot_embeddings,assignment=None):
   """Creates a classification model."""
   model = modeling.BertModel(
       config=bert_config,
@@ -557,34 +557,36 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
       input_mask=input_mask,
       token_type_ids=segment_ids,
       use_one_hot_embeddings=use_one_hot_embeddings)
+  with tf.variable_scope("squad_output"):
+    final_hidden = model.get_sequence_output()
 
-  final_hidden = model.get_sequence_output()
-
-  final_hidden_shape = modeling.get_shape_list(final_hidden, expected_rank=3)
-  batch_size = final_hidden_shape[0]
-  seq_length = final_hidden_shape[1]
-  hidden_size = final_hidden_shape[2]
-
-  output_weights = tf.get_variable(
+    final_hidden_shape = modeling.get_shape_list(final_hidden, expected_rank=3)
+    batch_size = final_hidden_shape[0]
+    seq_length = final_hidden_shape[1]
+    hidden_size = final_hidden_shape[2]
+    output_weights = tf.get_variable(
       "cls/squad/output_weights", [2, hidden_size],
       initializer=tf.truncated_normal_initializer(stddev=0.02))
 
-  output_bias = tf.get_variable(
+    output_bias = tf.get_variable(
       "cls/squad/output_bias", [2], initializer=tf.zeros_initializer())
 
-  final_hidden_matrix = tf.reshape(final_hidden,
+    final_hidden_matrix = tf.reshape(final_hidden,
                                    [batch_size * seq_length, hidden_size])
-  logits = tf.matmul(final_hidden_matrix, output_weights, transpose_b=True)
-  logits = tf.nn.bias_add(logits, output_bias)
+    logits = tf.matmul(final_hidden_matrix, output_weights, transpose_b=True)
+    logits = tf.nn.bias_add(logits, output_bias)
+    layer_output = logits
+    logits = tf.reshape(logits, [batch_size, seq_length, 2])
+    logits = tf.transpose(logits, [2, 0, 1])
 
-  logits = tf.reshape(logits, [batch_size, seq_length, 2])
-  logits = tf.transpose(logits, [2, 0, 1])
+    unstacked_logits = tf.unstack(logits, axis=0)
 
-  unstacked_logits = tf.unstack(logits, axis=0)
+    (start_logits, end_logits) = (unstacked_logits[0], unstacked_logits[1])
+    scope_name = tf.get_variable_scope().name
+    scope_names = model.get_all_layer_scopes()+[scope_name]
+    layer_outputs = model.get_all_outputs()+[layer_output]
 
-  (start_logits, end_logits) = (unstacked_logits[0], unstacked_logits[1])
-
-  return (start_logits, end_logits)
+  return (start_logits, end_logits,layer_outputs,scope_names)
 
 
 def model_fn_builder(bert_config, init_checkpoint, learning_rate,
@@ -700,25 +702,23 @@ def new_model_fn_builder(bert_config):
     input_mask = features["input_mask"]
     segment_ids = features["segment_ids"]
 
-    (start_logits, end_logits) = create_model(
+    (start_logits, end_logits,layer_outputs,layer_scopes) = create_model(
         bert_config=bert_config,
         is_training=True,
         input_ids=input_ids,
         input_mask=input_mask,
         segment_ids=segment_ids,
         use_one_hot_embeddings=False)
-
     tvars = tf.trainable_variables()
 
     initialized_variable_names = {}
-    scaffold_fn = None
     tf.logging.info("**** Trainable Variables ****")
     for var in tvars:
       init_string = ""
       if var.name in initialized_variable_names:
         init_string = ", *INIT_FROM_CKPT*"
       tf.logging.info("  name = %s, shape = %s%s", var.name, var.shape,
-                      init_string)
+                  init_string)
 
     if True:
       seq_length = modeling.get_shape_list(input_ids)[1]
@@ -738,8 +738,8 @@ def new_model_fn_builder(bert_config):
       end_loss = compute_loss(end_logits, end_positions)
 
       total_loss = (start_loss + end_loss) / 2.0
-
-    return total_loss
+    layer_outputs[-1] = total_loss
+    return total_loss,layer_outputs,layer_scopes
 
   return model_fn
 

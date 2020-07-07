@@ -46,8 +46,8 @@ def model_fn(scope,batch_size):
         features["segment_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 128)), tf.int32)
         features["start_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
         features["end_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
-        loss,layer_outputs, layer_scopes= model(features)
-    return loss,layer_outputs, layer_scopes
+        loss = model(features)
+    return loss
 
 
 class Activater():
@@ -63,32 +63,52 @@ class Activater():
         self.apply_grad = []
         self.instances=[]
         self.gradients = []
-        class setter():
-            def __init__(self,assignment):
-                self.assignment = assignment
-            def choose(self,op):
-                scope = tf.get_variable_scope().name
-                return self.assignment.get(scope, None)
+        for i in range(replica_num):
+            self.avg_gradient.append([])
+            with tf.device(self.devices[i]):
+                scope = "replica_"+str(i)
+                loss =self.model_fn(scope,batch_size)
+                vars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope)
+                gradients = tf.compat.v1.gradients(loss, vars,colocate_gradients_with_ops=True)
+                instance = []
+                self.losses.append(loss)
+                self.vars.append(vars)
+                self.instances.append(instance)
+                self.gradients.append(gradients)
+        #assert(self.instances[0]==self.instances[1])
+        '''
+        gradient_len = len(self.gradients[0])
+        dependency = []
+        for i in range(gradient_len,0,-1):
+            local_dependency=[]
+            for j in range(replica_num):
+                if self.gradients[j][i-1] ==None:
+                  continue
+                with tf.control_dependencies(dependency),tf.device(self.devices[j]):
+                    self.gradients[j][i-1] =collective_ops.all_reduce(self.gradients[j][i-1], replica_num, 0, gradient_len-i, 'Add', 'Id')
+                    local_dependency.append(self.gradients[j][i-1])
+            dependency = local_dependency
 
-        def device_setter(assignment):
-            _setter = setter(assignment)
-            return _setter.choose
-        loss,outputs,scopes =self.model_fn("Bert",batch_size)
-        tf.reset_default_graph()
-        assert(len(outputs)==len(scopes))
-        assignment = {item:self.devices[0] for item in scopes}
-        with tf.device(device_setter(assignment)):
-            loss, outputs, scopes = self.model_fn("Bert", batch_size)
-        operations = tf.get_default_graph().get_operations()
-        for op in operations:
-            print(op.name,op.device)
+        '''
+        for i in range(replica_num):
+            with tf.device(self.devices[i]):
+                self.apply_grad.append(tf.train.AdamOptimizer(learning_rate=0.01,beta1=0.9,beta2=0.98, epsilon=1e-9).apply_gradients(zip(self.gradients[i],self.vars[i])))
+
+
+
     def activate_unit(self,batch_size,replica_num):
         tf.reset_default_graph()
         self.build_model(replica_num, batch_size)
-        '''
         resolver = TFConfigClusterResolver()
         cluster = resolver.cluster_spec()
-
+        '''
+        dist = tf.distribute.experimental.MultiWorkerMirroredStrategy(
+            tf.distribute.experimental.CollectiveCommunication.NCCL)
+        config = dist.update_config_proto(tf.ConfigProto())
+        config.ClearField("device_filters")
+        config.allow_soft_placement = True  # log_device_placement=True)
+        config.gpu_options.allow_growth = True
+        '''
 
 
         config = tf.ConfigProto()
@@ -127,7 +147,6 @@ class Activater():
         avg_time = sum(times)/len(times)
         print(times,"average time:", avg_time)
         print(" ")
-        '''
 
 
 workers = config_dict.get("workers", ["10.28.1.26:3901","10.28.1.17:3901","10.28.1.16:3901"])

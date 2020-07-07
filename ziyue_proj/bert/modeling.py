@@ -162,15 +162,13 @@ class BertModel(object):
     batch_size = input_shape[0]
     seq_length = input_shape[1]
 
-    if input_mask is None:
-      input_mask = tf.ones(shape=[batch_size, seq_length], dtype=tf.int32)
 
-    if token_type_ids is None:
-      token_type_ids = tf.zeros(shape=[batch_size, seq_length], dtype=tf.int32)
 
     with tf.variable_scope(scope, default_name="bert"):
       with tf.variable_scope("embeddings"):
         # Perform embedding lookup on the word ids.
+        if token_type_ids is None:
+            token_type_ids = tf.zeros(shape=[batch_size, seq_length], dtype=tf.int32)
         (self.embedding_output, self.embedding_table) = embedding_lookup(
             input_ids=input_ids,
             vocab_size=config.vocab_size,
@@ -192,17 +190,20 @@ class BertModel(object):
             initializer_range=config.initializer_range,
             max_position_embeddings=config.max_position_embeddings,
             dropout_prob=config.hidden_dropout_prob)
-
+        self.embeddings_scope_name = tf.get_variable_scope().name
       with tf.variable_scope("encoder"):
         # This converts a 2D mask of shape [batch_size, seq_length] to a 3D
         # mask of shape [batch_size, seq_length, seq_length] which is used
         # for the attention scores.
+        if input_mask is None:
+            input_mask = tf.ones(shape=[batch_size, seq_length], dtype=tf.int32)
+
         attention_mask = create_attention_mask_from_input_mask(
             input_ids, input_mask)
 
         # Run the stacked transformer.
         # `sequence_output` shape = [batch_size, seq_length, hidden_size].
-        self.all_encoder_layers = transformer_model(
+        self.all_encoder_layers,self.all_encoder_layers_scope = transformer_model(
             input_tensor=self.embedding_output,
             attention_mask=attention_mask,
             hidden_size=config.hidden_size,
@@ -221,6 +222,7 @@ class BertModel(object):
       # [batch_size, hidden_size]. This is necessary for segment-level
       # (or segment-pair-level) classification tasks where we need a fixed
       # dimensional representation of the segment.
+      '''
       with tf.variable_scope("pooler"):
         # We "pool" the model by simply taking the hidden state corresponding
         # to the first token. We assume that this has been pre-trained
@@ -230,7 +232,7 @@ class BertModel(object):
             config.hidden_size,
             activation=tf.tanh,
             kernel_initializer=create_initializer(config.initializer_range))
-
+      '''
   def get_pooled_output(self):
     return self.pooled_output
 
@@ -242,6 +244,10 @@ class BertModel(object):
       to the final hidden of the transformer encoder.
     """
     return self.sequence_output
+  def get_all_layer_scopes(self):
+    return [self.embeddings_scope_name]+self.all_encoder_layers_scope
+  def get_all_outputs(self):
+    return [self.embedding_output]+self.all_encoder_layers
 
   def get_all_encoder_layers(self):
     return self.all_encoder_layers
@@ -828,6 +834,7 @@ def transformer_model(input_tensor,
   prev_output = reshape_to_matrix(input_tensor)
 
   all_layer_outputs = []
+  all_layer_name= []
   for layer_idx in range(num_hidden_layers):
     with tf.variable_scope("layer_%d" % layer_idx):
       layer_input = prev_output
@@ -885,13 +892,14 @@ def transformer_model(input_tensor,
         layer_output = layer_norm(layer_output + attention_output)
         prev_output = layer_output
         all_layer_outputs.append(layer_output)
-
+      scope_name = tf.get_variable_scope().name
+      all_layer_name.append(scope_name)
   if do_return_all_layers:
     final_outputs = []
     for layer_output in all_layer_outputs:
       final_output = reshape_from_matrix(layer_output, input_shape)
       final_outputs.append(final_output)
-    return final_outputs
+    return final_outputs,all_layer_name
   else:
     final_output = reshape_from_matrix(prev_output, input_shape)
     return final_output
