@@ -16,10 +16,7 @@ sys.path.append('./bert/')
 
 import multiprocessing as mp
 
-config_dict =dict()
-if os.path.exists("config.json"):
-    with open("config.json", "r") as f:
-        config_dict = json.load(f)
+
 
 def setup_workers(workers, protocol="grpc"):
     import urllib.request
@@ -32,18 +29,17 @@ def setup_workers(workers, protocol="grpc"):
         assert urllib.request.urlopen(url).read() == b'ok'
     time.sleep(1)
 
-devices = config_dict.get("devices", [""])
 
-def model_fn(scope,batch_size):
+def model_fn(batch_size):
     from bert.runsquad import new_model_fn_builder
     import modeling
     bert_config = modeling.BertConfig.from_json_file("bert/bert_large/bert_config.json")
     model = new_model_fn_builder(bert_config)
     features = {}
-    with tf.variable_scope(scope,reuse=tf.AUTO_REUSE):
-        features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 128)), tf.int32)
-        features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 128)), tf.int32)
-        features["segment_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 128)), tf.int32)
+    with tf.variable_scope("Bert",reuse=tf.AUTO_REUSE):
+        features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
+        features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
+        features["segment_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
         features["start_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
         features["end_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
         loss,layer_outputs, layer_scopes= model(features)
@@ -80,14 +76,14 @@ class Activater():
         def device_setter(assignment,devices):
             _setter = setter(assignment,devices)
             return _setter.choose
-        loss,outputs,scopes =self.model_fn("Bert",batch_size)
+        loss,outputs,scopes =self.model_fn(batch_size)
         tf.reset_default_graph()
         assert(len(outputs)==len(scopes))
         assignment = {item:self.devices[0]  if i<20 else self.devices[1] for i,item in enumerate(scopes)}
         with tf.device(device_setter(assignment,self.devices)):
-            loss, outputs, scopes = self.model_fn("Bert", batch_size)
+            loss, outputs, scopes = self.model_fn(batch_size)
         with tf.device(device_setter(assignment,self.devices)):
-            loss, outputs, scopes = self.model_fn("Bert", batch_size)
+            loss, outputs, scopes = self.model_fn(batch_size)
     def activate_unit(self,batch_size,replica_num):
         tf.reset_default_graph()
         self.build_model(replica_num, batch_size)
@@ -134,15 +130,20 @@ class Activater():
         print(times,"average time:", avg_time)
         print(" ")
         '''
+if __name__ == '__main__':
+    config_dict =dict()
+    if os.path.exists("config.json"):
+        with open("config.json", "r") as f:
+            config_dict = json.load(f)
+    devices = config_dict.get("devices", [""])
+
+    workers = config_dict.get("workers", ["10.28.1.26:3901","10.28.1.17:3901","10.28.1.16:3901"])
+
+    clus = dict()
+    clus["cluster"] = {"worker": workers}
+    clus["task"] = {"type": "worker", "index": 0}
+    os.environ["TF_CONFIG"] = json.dumps(clus)
 
 
-workers = config_dict.get("workers", ["10.28.1.26:3901","10.28.1.17:3901","10.28.1.16:3901"])
-
-clus = dict()
-clus["cluster"] = {"worker": workers}
-clus["task"] = {"type": "worker", "index": 0}
-os.environ["TF_CONFIG"] = json.dumps(clus)
-
-
-act = Activater()
-act.activate_unit(replica_num=2,batch_size=12)
+    act = Activater()
+    act.activate_unit(replica_num=2,batch_size=12)

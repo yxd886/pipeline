@@ -216,7 +216,7 @@ class BertModel(object):
             initializer_range=config.initializer_range,
             do_return_all_layers=True)
 
-      self.sequence_output = self.all_encoder_layers[-1]
+      self.sequence_output = reshape_from_matrix(self.all_encoder_layers[-1], get_shape_list(self.embedding_output,expected_rank=3))
       # The "pooler" converts the encoded sequence tensor of shape
       # [batch_size, seq_length, hidden_size] to a tensor of shape
       # [batch_size, hidden_size]. This is necessary for segment-level
@@ -233,8 +233,6 @@ class BertModel(object):
             activation=tf.tanh,
             kernel_initializer=create_initializer(config.initializer_range))
       '''
-  def get_pooled_output(self):
-    return self.pooled_output
 
   def get_sequence_output(self):
     """Gets final hidden layer of encoder.
@@ -895,11 +893,12 @@ def transformer_model(input_tensor,
       scope_name = tf.get_variable_scope().name
       all_layer_name.append(scope_name)
   if do_return_all_layers:
-    final_outputs = []
-    for layer_output in all_layer_outputs:
-      final_output = reshape_from_matrix(layer_output, input_shape)
-      final_outputs.append(final_output)
-    return final_outputs,all_layer_name
+    #final_outputs = []
+    #for layer_output in all_layer_outputs:
+    #  final_output = reshape_from_matrix(layer_output, input_shape)
+    #  final_outputs.append(final_output)
+    #all_layer_outputs[-1] =  reshape_from_matrix(all_layer_outputs[-1], input_shape)
+    return all_layer_outputs,all_layer_name
   else:
     final_output = reshape_from_matrix(prev_output, input_shape)
     return final_output
