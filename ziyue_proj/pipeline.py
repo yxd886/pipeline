@@ -37,22 +37,45 @@ def model_fn(batch_size):
     model = new_model_fn_builder(bert_config)
     features = {}
     with tf.variable_scope("Bert",reuse=tf.AUTO_REUSE):
-        features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
-        features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
-        features["segment_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
-        features["start_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
-        features["end_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
+        with tf.variable_scope("input"):
+            features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
+            features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
+            features["segment_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
+            features["start_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
+            features["end_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
         loss,layer_outputs, layer_scopes= model(features)
-    return loss,layer_outputs, layer_scopes
+    return loss,[features["input_ids"]]+layer_outputs, ["input"]+layer_scopes
 
 
 class Activater():
-    def __init__(self):
+    def __init__(self,micro_batch_num,batch_size):
         self.model_fn =model_fn
         self.devices = devices
+        self.micro_batch_num = micro_batch_num
+        self.batch_size = batch_size
+        loss, outputs, scopes = self.model_fn(batch_size)
+        tf.reset_default_graph()
+        self.scopes = scopes
+        self.outputs = outputs
 
+    def compute_scope_operation_dict(self):
+        result = {item:[] for item in self.scopes}
+        operations = self.graph.get_operations()
+        for operation in operations:
+            for scope in self.scopes:
+                if scope in operation.name:
+                    result[scope].append(operation.name)
+        return result
 
-    def build_model(self,replica_num,batch_size):
+    def compute_operation_scope_dict(self):
+        result = {}
+        operations = self.graph.get_operations()
+        for operation in operations:
+            for scope in self.scopes:
+                if scope in operation.name:
+                    result[operation.name] = scope
+        return result
+    def build_model(self):
         self.losses=[]
         self.vars = []
         self.avg_gradient=[]
@@ -76,60 +99,49 @@ class Activater():
         def device_setter(assignment,devices):
             _setter = setter(assignment,devices)
             return _setter.choose
-        loss,outputs,scopes =self.model_fn(batch_size)
+
+        assignment = {item:self.devices[0]  if i<20 else self.devices[1] for i,item in enumerate(self.scopes)}
+        losses = []
+        outputs = []
+        for i in range(self.micro_batch_num):
+            with tf.device(device_setter(assignment,self.devices)):
+                loss, output, scopes = self.model_fn(self.batch_size)
+                losses.append(loss)
+                outputs.append(output[-1])
+        self.train_op = tf.train.AdamOptimizer(learning_rate=0.01,beta1=0.9,beta2=0.98, epsilon=1e-9).minimize(tf.add_n(losses))
+
+        init = tf.global_variables_initializer()
+        self.gdef = tf.get_default_graph().as_graph_def(add_shapes=True)
+    def change_model(self):
+        strategy = {}
+        assignment = {self.scopes[i]:[0,1] for i in range(len(self.scopes))}
+        op_scope_dict = self.compute_operation_scope_dict()
+        for op in op_scope_dict:
+            place = [0]*len(self.devices)
+            decision = assignment[op_scope_dict[op]]
+            place[decision[0]:decision[1]+1] = 1
+            strategy[op] = [1]+place
+
+        import tge
+
+        # options = [[0, 1], [1, 0], [0, 2], [2, 0], [1, 1]]
+        # strategy = { node.name: [np.random.randint(0, 2)] + options[np.random.randint(0, len(options))] for node in gdef.node }
+
+        g = (tge.TGE(self.gdef, self.devices)
+             .custom(strategy)
+             .replace_placeholder(self.batch_size)
+             .use_collective()
+             .compile()
+             .get_result()
+             )
+
+        with open("modified.pbtxt", "w") as fo:
+            fo.write(pbtf.MessageToString(g))
+
+    def activate_unit(self):
         tf.reset_default_graph()
-        assert(len(outputs)==len(scopes))
-        assignment = {item:self.devices[0]  if i<20 else self.devices[1] for i,item in enumerate(scopes)}
-        with tf.device(device_setter(assignment,self.devices)):
-            loss, outputs, scopes = self.model_fn(batch_size)
-        with tf.device(device_setter(assignment,self.devices)):
-            loss, outputs, scopes = self.model_fn(batch_size)
-    def activate_unit(self,batch_size,replica_num):
-        tf.reset_default_graph()
-        self.build_model(replica_num, batch_size)
-        '''
-        resolver = TFConfigClusterResolver()
-        cluster = resolver.cluster_spec()
-
-
-
-        config = tf.ConfigProto()
-        with open("dist_config.pbtxt", "r") as f:
-            txt = f.read()
-        pbtf.Parse(txt, config)
-        setup_workers(workers, "grpc+verbs")
-        server = tf.distribute.Server(cluster, job_name='worker', task_index=0, protocol="grpc+verbs",
-                                           config=config)
-        target = server.target
-
-
-        init_op = tf.compat.v1.global_variables_initializer()
-
-
-        sess = tf.Session(target, config=config)  # , config=tf.ConfigProto(allow_soft_placement=False))
-
-
-        sess.run(init_op)
-        input_dict = None
-        graph = tf.get_default_graph()
-        placeholders = [node.outputs[0] for node in graph.get_operations() if node.node_def.op == 'Placeholder']
-        shapes = [(p.shape.as_list()) for p in placeholders ]
-        for shape in shapes:
-            shape[0]=batch_size
-        input_dict = { p: np.random.rand(*shapes[i]) for i,p in enumerate(placeholders) }
-
-        for j in range(10):  # warm up
-            sess.run(self.apply_grad, feed_dict=input_dict)
-
-        times= []
-        for j in range(10):
-            tmp = time.time()
-            sess.run(self.apply_grad, feed_dict=input_dict)
-            times.append(time.time()-tmp)
-        avg_time = sum(times)/len(times)
-        print(times,"average time:", avg_time)
-        print(" ")
-        '''
+        self.build_model()
+        self.change_model()
 if __name__ == '__main__':
     config_dict =dict()
     if os.path.exists("config.json"):
@@ -145,5 +157,5 @@ if __name__ == '__main__':
     os.environ["TF_CONFIG"] = json.dumps(clus)
 
 
-    act = Activater()
-    act.activate_unit(replica_num=2,batch_size=12)
+    act = Activater(micro_batch_num = 16,batch_size=4)
+    act.activate_unit()

@@ -98,7 +98,10 @@ for i,tensor in enumerate(output):
     for dim in shape:
         variable_parameters *= dim.value
     scope_name = scopes[i]
-    layer_result[scope_name][2] = variable_parameters*4
+    if i==0:
+        layer_result[scope_name][2] = variable_parameters * 4*3
+    else:
+        layer_result[scope_name][2] = variable_parameters*4
 
 #for i,layer_name in enumerate(layer_result):
 #    index = order_scopes.index(layer_name)
