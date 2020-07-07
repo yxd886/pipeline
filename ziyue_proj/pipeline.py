@@ -120,7 +120,8 @@ class Activater():
         for op in op_scope_dict:
             place = [0]*len(self.devices)
             decision = assignment[op_scope_dict[op]]
-            place[decision[0]:decision[1]+1] = 1
+            for i in range(decision[0],decision[1]+1,1):
+                place[i] = 1
             strategy[op] = [1]+place
 
         import tge
@@ -158,5 +159,5 @@ if __name__ == '__main__':
     os.environ["TF_CONFIG"] = json.dumps(clus)
 
 
-    act = Activater(micro_batch_num = 16,batch_size=4)
+    act = Activater(micro_batch_num = 2,batch_size=4)
     act.activate_unit()
