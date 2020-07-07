@@ -68,7 +68,11 @@ class Activater():
                 self.assignment = assignment
             def choose(self,op):
                 scope = tf.get_variable_scope().name
-                return self.assignment.get(scope, "")
+                device = self.assignment.get(scope, "")
+                if device=="":
+                    print(self.assignment)
+                    print(scope)
+                return device
 
         def device_setter(assignment):
             _setter = setter(assignment)
