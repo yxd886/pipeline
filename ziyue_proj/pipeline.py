@@ -129,7 +129,7 @@ class Activater():
         # options = [[0, 1], [1, 0], [0, 2], [2, 0], [1, 1]]
         # strategy = { node.name: [np.random.randint(0, 2)] + options[np.random.randint(0, len(options))] for node in gdef.node }
 
-        g = (tge.TGE(self.gdef, self.devices)
+        g = (tge.TGE(self.gdef, self.devices, ["Adam"])
              .custom(strategy)
              .replace_placeholder(self.batch_size)
              .use_collective()
