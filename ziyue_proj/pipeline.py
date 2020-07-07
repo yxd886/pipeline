@@ -40,7 +40,7 @@ def model_fn(scope,batch_size):
     bert_config = modeling.BertConfig.from_json_file("bert/bert_large/bert_config.json")
     model = new_model_fn_builder(bert_config)
     features = {}
-    with tf.variable_scope(scope):
+    with tf.variable_scope(scope,reuse=tf.AUTO_REUSE):
         features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 128)), tf.int32)
         features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 128)), tf.int32)
         features["segment_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 128)), tf.int32)
@@ -64,25 +64,29 @@ class Activater():
         self.instances=[]
         self.gradients = []
         class setter():
-            def __init__(self,assignment):
+            def __init__(self,assignment,devices):
                 self.assignment = assignment
+                self.last_device =devices[0]
             def choose(self,op):
                 scope = tf.get_variable_scope().name
                 for key in self.assignment:
                     if key in scope:
+                        self.last_device=self.assignment[key]
                         return self.assignment[key]
                 #print(self.assignment)
-                print(scope,op.name)
-                return ""
+                print(scope,op.name,self.last_device)
+                return self.last_device
 
-        def device_setter(assignment):
-            _setter = setter(assignment)
+        def device_setter(assignment,devices):
+            _setter = setter(assignment,devices)
             return _setter.choose
         loss,outputs,scopes =self.model_fn("Bert",batch_size)
         tf.reset_default_graph()
         assert(len(outputs)==len(scopes))
-        assignment = {item:self.devices[0] for item in scopes}
-        with tf.device(device_setter(assignment)):
+        assignment = {item:self.devices[0]  if i<20 else self.devices[1] for i,item in enumerate(scopes)}
+        with tf.device(device_setter(assignment,self.devices)):
+            loss, outputs, scopes = self.model_fn("Bert", batch_size)
+        with tf.device(device_setter(assignment,self.devices)):
             loss, outputs, scopes = self.model_fn("Bert", batch_size)
     def activate_unit(self,batch_size,replica_num):
         tf.reset_default_graph()
