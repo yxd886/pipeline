@@ -75,11 +75,16 @@ class Activater():
             if "gradients" in operation.name:
                 scope_name = name.split("/")[1]
                 if scope_name in self.scopes:
-                    result[name.name] = scope_name
+                    result[name] = scope_name
+                elif scope_name[:-2] in self.scopes:
+                    result[name] = scope_name[:-2]
+
             else:
                 scope_name = name.split("/")[0]
                 if scope_name in self.scopes:
-                    result[name.name] = scope_name
+                    result[name] = scope_name
+                elif scope_name[:-2] in self.scopes:
+                    result[name] = scope_name[:-2]
         for operation in operations:
             if operation.name not in result.keys():
                 colocation = operation.colocation_groups()
