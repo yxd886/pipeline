@@ -162,7 +162,7 @@ class BertModel(object):
 
 
 
-    with tf.variable_scope(scope, default_name="bert"):
+    if True:
       with tf.variable_scope("embeddings",reuse=tf.AUTO_REUSE):
         # Perform embedding lookup on the word ids.
         input_shape = get_shape_list(input_ids, expected_rank=2)
