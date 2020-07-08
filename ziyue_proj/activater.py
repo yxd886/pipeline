@@ -49,7 +49,7 @@ class Activater():
         self.server=None
 
     def activate_unit(self,path,graph_def):
-        setup_workers(workers, "grpc+verbs")
+        setup_workers(workers, "grpc")
         tf.reset_default_graph()
         resolver = TFConfigClusterResolver()
         cluster = resolver.cluster_spec()
@@ -65,7 +65,7 @@ class Activater():
         with open("dist_config.pbtxt", "r") as f:
             txt = f.read()
         pbtf.Parse(txt, config)
-        server = tf.distribute.Server(cluster, job_name='worker', task_index=0, protocol="grpc+verbs",
+        server = tf.distribute.Server(cluster, job_name='worker', task_index=0, protocol="grpc",
                                            config=config)
         target = server.target
 
