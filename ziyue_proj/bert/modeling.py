@@ -672,7 +672,8 @@ def attention_layer(from_tensor,
       num_attention_heads * size_per_head,
       activation=query_act,
       name="query",
-      kernel_initializer=create_initializer(initializer_range))
+      kernel_initializer=create_initializer(initializer_range),
+      reuse=tf.AUTO_REUSE)
 
   # `key_layer` = [B*T, N*H]
   key_layer = tf.layers.dense(
@@ -680,7 +681,8 @@ def attention_layer(from_tensor,
       num_attention_heads * size_per_head,
       activation=key_act,
       name="key",
-      kernel_initializer=create_initializer(initializer_range))
+      kernel_initializer=create_initializer(initializer_range),
+      reuse=tf.AUTO_REUSE)
 
   # `value_layer` = [B*T, N*H]
   value_layer = tf.layers.dense(
@@ -688,7 +690,8 @@ def attention_layer(from_tensor,
       num_attention_heads * size_per_head,
       activation=value_act,
       name="value",
-      kernel_initializer=create_initializer(initializer_range))
+      kernel_initializer=create_initializer(initializer_range),
+      reuse=tf.AUTO_REUSE)
 
   # `query_layer` = [B, N, F, H]
   query_layer = transpose_for_scores(query_layer, batch_size,

@@ -156,7 +156,16 @@ class Activater():
             f.write(str(tf.get_default_graph().as_graph_def(add_shapes=True)))
 
         strategy = {}
-        assignment = {self.scopes[i]:[0,0]  if i <6 else [1,3] for i in range(len(self.scopes))}
+        assignment = {}
+        for i in range(len(self.scopes)):
+            if i <8:
+                assignment[self.scopes[i]] = [0,0]
+            elif i<14:
+                assignment[self.scopes[i]] = [1,1]
+            else:
+                assignment[self.scopes[i]] = [2,3]
+
+
         op_scope_dict = self.compute_operation_scope_dict()
         for op in op_scope_dict:
             place = [0]*len(self.devices)
