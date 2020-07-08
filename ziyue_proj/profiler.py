@@ -14,7 +14,7 @@ def find_bp_point(graph,fp_list,operation_names):
                 op = graph.get_operation_by_name(graph_name)
                 colocation = op.colocation_groups()
                 lead = colocation[0]
-                reverse_bp_name[i] ==lead.name.decode().split("@")[1]
+                reverse_bp_name[i] =lead.decode().split("@")[1]
                 break
     return reverse_bp_name
 

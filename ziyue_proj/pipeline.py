@@ -74,6 +74,12 @@ class Activater():
             for scope in self.scopes:
                 if scope in operation.name:
                     result[operation.name] = scope
+        for operation in operations:
+            if operation.name not in result.keys():
+                colocation = operation.colocation_groups()
+                lead = colocation[0]
+                result[operation.name] = lead.decode().split("@")[1]
+
         return result
     def build_model(self):
         self.losses=[]
