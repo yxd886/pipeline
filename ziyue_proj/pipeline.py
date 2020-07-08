@@ -99,6 +99,15 @@ class Activater():
                 else:
                     result[operation.name] = result[lead_name]
 
+        #check colocation
+        for operation in operations:
+            colocation = operation.colocation_groups()
+            lead = colocation[0]
+            lead_name = lead.decode().split("@")[1]
+            if result[lead_name]!=result[operation.name]:
+                print("!!!!",operation.name,lead_name,result[operation.name])
+            assert(result[lead_name]==result[operation.name])
+
         return result
     def build_model(self):
         self.losses=[]
