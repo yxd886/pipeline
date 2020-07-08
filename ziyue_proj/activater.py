@@ -70,10 +70,17 @@ class Activater():
         target = server.target
 
         tf.import_graph_def(graph_def)
+        print("import success")
         graph = tf.get_default_graph()
         init = graph.get_operation_by_name("import/init/replica_0")
+        print("11111111111111111111111")
+
         sess = tf.Session(target, config=config)  # , config=tf.ConfigProto(allow_soft_placement=False))
+        print("222222222222222222222222")
+
         sess.run(init)
+        print("333333333333333333333")
+
         input_dict = None
         '''
         placeholders = [node.outputs[0] for node in graph.get_operations() if node.node_def.op == 'Placeholder']
@@ -91,6 +98,8 @@ class Activater():
                 except:
                     break
         # opt = [graph.get_operation_by_name('import/' + x) for x in self.sinks]
+        print("444444444444444444444")
+
         for j in range(10):  # warm up
             sess.run(opt, feed_dict=input_dict)
 
@@ -129,10 +138,7 @@ class Activater():
             fo.write(pbtf.MessageToString(run_meta))
     def activate(self):
         for k,graph_def in enumerate(self.graph_defs):
-            p = mp.Process(target=self.activate_unit, args=(self.path[k],graph_def,))
-            p.start()
-            p.join()
-            p.terminate()
+            self.activate_unit(self.path[k],graph_def)
 
 workers = config_dict.get("workers", ["10.28.1.26:3901","10.28.1.17:3901","10.28.1.16:3901"])
 
