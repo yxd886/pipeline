@@ -30,13 +30,13 @@ def setup_workers(workers, protocol="grpc"):
     time.sleep(1)
 
 
-def model_fn(batch_size,scope):
+def model_fn(batch_size):
     from bert.runsquad import new_model_fn_builder
     import modeling
     bert_config = modeling.BertConfig.from_json_file("bert/bert_large/bert_config.json")
     model = new_model_fn_builder(bert_config)
     features = {}
-    with tf.variable_scope(scope):
+    if True:
         with tf.variable_scope("input",reuse=tf.AUTO_REUSE):
             features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
             features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
@@ -53,9 +53,7 @@ class Activater():
         self.devices = devices
         self.micro_batch_num = micro_batch_num
         self.batch_size = batch_size
-        with tf.variable_scope("Bert") as self.vs:
-            pass
-        loss, outputs, scopes = self.model_fn(None,self.vs)
+        loss, outputs, scopes = self.model_fn(None)
         tf.reset_default_graph()
         self.scopes = scopes
         self.outputs = outputs
@@ -107,7 +105,7 @@ class Activater():
         outputs = []
         for i in range(self.micro_batch_num):
             with tf.device(device_setter(assignment,self.devices)):
-                loss, output, scopes = self.model_fn(None,self.vs)
+                loss, output, scopes = self.model_fn(None)
                 losses.append(loss)
                 outputs.append(output[-1])
         self.train_op = tf.train.AdamOptimizer(learning_rate=0.01,beta1=0.9,beta2=0.98, epsilon=1e-9).minimize(tf.add_n(losses))
