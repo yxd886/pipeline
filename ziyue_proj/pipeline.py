@@ -76,13 +76,16 @@ class Activater():
                 scope_name = name.split("/")[1]
                 if scope_name in self.scopes:
                     result[name] = scope_name
+                elif scope_name[:-3] in self.scopes:
+                    result[name] = scope_name[:-3]
                 elif scope_name[:-2] in self.scopes:
                     result[name] = scope_name[:-2]
-
             else:
                 scope_name = name.split("/")[0]
                 if scope_name in self.scopes:
                     result[name] = scope_name
+                elif scope_name[:-3] in self.scopes:
+                    result[name] = scope_name[:-3]
                 elif scope_name[:-2] in self.scopes:
                     result[name] = scope_name[:-2]
         for operation in operations:
