@@ -71,9 +71,15 @@ class Activater():
         result = {}
         operations = self.graph.get_operations()
         for operation in operations:
-            for scope in self.scopes:
-                if scope in operation.name:
-                    result[operation.name] = scope
+            name = operation.name
+            if "gradients" in operation.name:
+                scope_name = name.split("/")[1]
+                if scope_name in self.scopes:
+                    result[name.name] = scope_name
+            else:
+                scope_name = name.split("/")[0]
+                if scope_name in self.scopes:
+                    result[name.name] = scope_name
         for operation in operations:
             if operation.name not in result.keys():
                 colocation = operation.colocation_groups()

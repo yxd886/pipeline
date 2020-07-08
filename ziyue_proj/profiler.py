@@ -65,17 +65,23 @@ for dev in run_meta.step_stats.dev_stats:
 # layer time
 print(scopes)
 for name in names:
-    for scope in scopes:
-        if scope in name:
-            if "gradient" not in name:
-                if scope not in layer_result:
-                    layer_result[scope] = [0,0,0,0]
-                layer_result[scope][0]+=(result[name][1]-result[name][0])
-            else:
-                if scope not in layer_result:
-                    layer_result[scope] = [0,0,0,0]
-                layer_result[scope][1]+=(result[name][1]-result[name][0])
-            break
+    if "gradients" in name:
+        scope = name.split("/")[1]
+        if scope not in scopes:
+            print(scope)
+            continue
+        if scope not in layer_result:
+            layer_result[scope] = [0, 0, 0, 0]
+        layer_result[scope][1] += (result[name][1] - result[name][0])
+    else:
+        scope = name.split("/")[0]
+        if scope not in scopes:
+            print(scope)
+            continue
+        if scope not in layer_result:
+            layer_result[scope] = [0, 0, 0, 0]
+        layer_result[scope][0] += (result[name][1] - result[name][0])
+
 
 #parameter size
 for scope in scopes:
