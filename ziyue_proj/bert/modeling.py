@@ -163,7 +163,7 @@ class BertModel(object):
 
 
     with tf.variable_scope(scope, default_name="bert"):
-      with tf.variable_scope("embeddings"):
+      with tf.variable_scope("embeddings",reuse=tf.AUTO_REUSE):
         # Perform embedding lookup on the word ids.
         input_shape = get_shape_list(input_ids, expected_rank=2)
         batch_size = input_shape[0]
@@ -806,7 +806,7 @@ def transformer_model(input_tensor,
   Raises:
     ValueError: A Tensor shape or parameter is invalid.
   """
-  with tf.variable_scope("embeddings"):
+  with tf.variable_scope("embeddings",reuse=tf.AUTO_REUSE):
     if hidden_size % num_attention_heads != 0:
       raise ValueError(
         "The hidden size (%d) is not a multiple of the number of attention "
@@ -835,7 +835,7 @@ def transformer_model(input_tensor,
   all_layer_outputs = [embedding_output]
   all_layer_name= [embedding_scope_name]
   for layer_idx in range(num_hidden_layers):
-    with tf.variable_scope("layer_%d" % layer_idx):
+    with tf.variable_scope("layer_%d" % layer_idx,reuse=tf.AUTO_REUSE):
       layer_input = prev_output
 
       with tf.variable_scope("attention"):
