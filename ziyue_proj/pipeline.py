@@ -168,7 +168,9 @@ class Activater():
             if op.name not in strategy.keys():
                 print(op.name)
                 strategy[op.name] = [1]+place
-
+        import pickle as pkl
+        with open("strategy.pkl","wb") as f:
+            pkl.dump(strategy,f)
         import tge
 
         # options = [[0, 1], [1, 0], [0, 2], [2, 0], [1, 1]]
