@@ -36,7 +36,7 @@ def model_fn(batch_size):
     bert_config = modeling.BertConfig.from_json_file("bert/bert_large/bert_config.json")
     model = new_model_fn_builder(bert_config)
     features = {}
-    with tf.variable_scope("Bert"):
+    with tf.variable_scope(None,default_name="Bert"):
         with tf.variable_scope("input",reuse=tf.AUTO_REUSE):
             features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
             features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
