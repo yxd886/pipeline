@@ -2,6 +2,8 @@ import numpy as np
 import tensorflow as tf
 import re
 import itertools
+import os
+import json
 from pipeline import model_fn
 
 
@@ -18,8 +20,11 @@ def find_bp_point(graph,fp_list,operation_names):
                 break
     return reverse_bp_name
 
-
-batch_size = 12
+config_dict =dict()
+if os.path.exists("config.json"):
+    with open("config.json", "r") as f:
+        config_dict = json.load(f)
+batch_size = config_dict.get("batch_size", 6)
 with tf.device("/device:GPU:0"):
     loss,output,scopes = model_fn(batch_size)
     #vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)

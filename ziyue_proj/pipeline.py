@@ -146,7 +146,7 @@ class Activater():
             f.write(str(tf.get_default_graph().as_graph_def(add_shapes=True)))
 
         strategy = {}
-        assignment = {self.scopes[i]:[0,1] for i in range(len(self.scopes))}
+        assignment = {self.scopes[i]:[0,0]  if i <6 else [1,3] for i in range(len(self.scopes))}
         op_scope_dict = self.compute_operation_scope_dict()
         for op in op_scope_dict:
             place = [0]*len(self.devices)
@@ -193,6 +193,8 @@ if __name__ == '__main__':
     clus["task"] = {"type": "worker", "index": 0}
     os.environ["TF_CONFIG"] = json.dumps(clus)
 
+    micro_batch_num =  config_dict.get("micro_batch_num",16)
+    batch_size =  config_dict.get("batch_size",6)
 
-    act = Activater(micro_batch_num = 2,batch_size=4)
+    act = Activater(micro_batch_num = micro_batch_num,batch_size=batch_size)
     act.activate_unit()
