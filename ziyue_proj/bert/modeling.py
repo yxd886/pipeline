@@ -158,15 +158,16 @@ class BertModel(object):
       config.hidden_dropout_prob = 0.0
       config.attention_probs_dropout_prob = 0.0
 
-    input_shape = get_shape_list(input_ids, expected_rank=2)
-    batch_size = input_shape[0]
-    seq_length = input_shape[1]
+
 
 
 
     with tf.variable_scope(scope, default_name="bert"):
       with tf.variable_scope("embeddings"):
         # Perform embedding lookup on the word ids.
+        input_shape = get_shape_list(input_ids, expected_rank=2)
+        batch_size = input_shape[0]
+        seq_length = input_shape[1]
         if token_type_ids is None:
             token_type_ids = tf.zeros(shape=[batch_size, seq_length], dtype=tf.int32)
         (self.embedding_output, self.embedding_table) = embedding_lookup(
@@ -190,20 +191,18 @@ class BertModel(object):
             initializer_range=config.initializer_range,
             max_position_embeddings=config.max_position_embeddings,
             dropout_prob=config.hidden_dropout_prob)
-        self.embeddings_scope_name = tf.get_variable_scope().name
-      with tf.variable_scope("encoder"):
         # This converts a 2D mask of shape [batch_size, seq_length] to a 3D
         # mask of shape [batch_size, seq_length, seq_length] which is used
         # for the attention scores.
         if input_mask is None:
-            input_mask = tf.ones(shape=[batch_size, seq_length], dtype=tf.int32)
+          input_mask = tf.ones(shape=[batch_size, seq_length], dtype=tf.int32)
 
         attention_mask = create_attention_mask_from_input_mask(
-            input_ids, input_mask)
+              input_ids, input_mask)
 
         # Run the stacked transformer.
         # `sequence_output` shape = [batch_size, seq_length, hidden_size].
-        self.all_encoder_layers,self.all_encoder_layers_scope = transformer_model(
+      self.all_encoder_layers,self.all_encoder_layers_scope = transformer_model(
             input_tensor=self.embedding_output,
             attention_mask=attention_mask,
             hidden_size=config.hidden_size,
@@ -216,7 +215,6 @@ class BertModel(object):
             initializer_range=config.initializer_range,
             do_return_all_layers=True)
 
-      self.sequence_output = reshape_from_matrix(self.all_encoder_layers[-1], get_shape_list(self.embedding_output,expected_rank=3))
       # The "pooler" converts the encoded sequence tensor of shape
       # [batch_size, seq_length, hidden_size] to a tensor of shape
       # [batch_size, hidden_size]. This is necessary for segment-level
@@ -241,11 +239,11 @@ class BertModel(object):
       float Tensor of shape [batch_size, seq_length, hidden_size] corresponding
       to the final hidden of the transformer encoder.
     """
-    return self.sequence_output
+    return reshape_from_matrix(self.all_encoder_layers[-1], get_shape_list(self.embedding_output,expected_rank=3))
   def get_all_layer_scopes(self):
-    return [self.embeddings_scope_name]+self.all_encoder_layers_scope
+    return self.all_encoder_layers_scope
   def get_all_outputs(self):
-    return [self.embedding_output]+self.all_encoder_layers
+    return self.all_encoder_layers
 
   def get_all_encoder_layers(self):
     return self.all_encoder_layers
@@ -808,31 +806,34 @@ def transformer_model(input_tensor,
   Raises:
     ValueError: A Tensor shape or parameter is invalid.
   """
-  if hidden_size % num_attention_heads != 0:
-    raise ValueError(
+  with tf.variable_scope("embeddings"):
+    if hidden_size % num_attention_heads != 0:
+      raise ValueError(
         "The hidden size (%d) is not a multiple of the number of attention "
         "heads (%d)" % (hidden_size, num_attention_heads))
 
-  attention_head_size = int(hidden_size / num_attention_heads)
-  input_shape = get_shape_list(input_tensor, expected_rank=3)
-  batch_size = input_shape[0]
-  seq_length = input_shape[1]
-  input_width = input_shape[2]
+    attention_head_size = int(hidden_size / num_attention_heads)
+    input_shape = get_shape_list(input_tensor, expected_rank=3)
+    batch_size = input_shape[0]
+    seq_length = input_shape[1]
+    input_width = input_shape[2]
 
   # The Transformer performs sum residuals on all layers so the input needs
   # to be the same as the hidden size.
-  if input_width != hidden_size:
-    raise ValueError("The width of the input tensor (%d) != hidden size (%d)" %
+    if input_width != hidden_size:
+      raise ValueError("The width of the input tensor (%d) != hidden size (%d)" %
                      (input_width, hidden_size))
 
   # We keep the representation as a 2D tensor to avoid re-shaping it back and
   # forth from a 3D tensor to a 2D tensor. Re-shapes are normally free on
   # the GPU/CPU but may not be free on the TPU, so we want to minimize them to
   # help the optimizer.
-  prev_output = reshape_to_matrix(input_tensor)
+    prev_output = reshape_to_matrix(input_tensor)
+    embedding_scope_name = tf.get_variable_scope().name
+    embedding_output = prev_output
 
-  all_layer_outputs = []
-  all_layer_name= []
+  all_layer_outputs = [embedding_output]
+  all_layer_name= [embedding_scope_name]
   for layer_idx in range(num_hidden_layers):
     with tf.variable_scope("layer_%d" % layer_idx):
       layer_input = prev_output

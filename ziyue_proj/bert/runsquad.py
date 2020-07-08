@@ -557,9 +557,8 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids,
       input_mask=input_mask,
       token_type_ids=segment_ids,
       use_one_hot_embeddings=use_one_hot_embeddings)
-  final_hidden = model.get_sequence_output()
   with tf.variable_scope("squad_output"):
-
+    final_hidden = model.get_sequence_output()
     final_hidden_shape = modeling.get_shape_list(final_hidden, expected_rank=3)
     batch_size = final_hidden_shape[0]
     seq_length = final_hidden_shape[1]
