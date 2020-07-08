@@ -78,7 +78,12 @@ class Activater():
             if operation.name not in result.keys():
                 colocation = operation.colocation_groups()
                 lead = colocation[0]
-                result[operation.name] = result[lead.decode().split("@")[1]]
+                lead_name = lead.decode().split("@")[1]
+                if lead_name not in result.keys():
+                    print(operation.name,lead_name)
+                    result[operation.name] = self.scopes[0]
+                else:
+                    result[operation.name] = result[lead_name]
 
         return result
     def build_model(self):
@@ -114,7 +119,9 @@ class Activater():
                 loss, output, scopes = self.model_fn(None)
                 losses.append(loss)
                 outputs.append(output[-1])
-        self.train_op = tf.train.AdamOptimizer(learning_rate=0.01,beta1=0.9,beta2=0.98, epsilon=1e-9).minimize(tf.add_n(losses,name="squad_output_add"))
+        with tf.variable_scope("squad_output"):
+            new_loss =tf.add_n(losses)
+        self.train_op = tf.train.AdamOptimizer(learning_rate=0.01,beta1=0.9,beta2=0.98, epsilon=1e-9).minimize(new_loss)
 
         init = tf.global_variables_initializer()
         self.graph = tf.get_default_graph()
