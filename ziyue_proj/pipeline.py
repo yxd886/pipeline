@@ -114,12 +114,16 @@ class Activater():
                 loss, output, scopes = self.model_fn(None)
                 losses.append(loss)
                 outputs.append(output[-1])
-        self.train_op = tf.train.AdamOptimizer(learning_rate=0.01,beta1=0.9,beta2=0.98, epsilon=1e-9).minimize(tf.add_n(losses))
+        self.train_op = tf.train.AdamOptimizer(learning_rate=0.01,beta1=0.9,beta2=0.98, epsilon=1e-9).minimize(tf.add_n(losses,name="squad_output_add"))
 
         init = tf.global_variables_initializer()
         self.graph = tf.get_default_graph()
         self.gdef = tf.get_default_graph().as_graph_def(add_shapes=True)
     def change_model(self):
+
+        with open("init_graph.pbtxt", "w") as f:
+            f.write(str(tf.get_default_graph().as_graph_def(add_shapes=True)))
+
         strategy = {}
         assignment = {self.scopes[i]:[0,1] for i in range(len(self.scopes))}
         op_scope_dict = self.compute_operation_scope_dict()
