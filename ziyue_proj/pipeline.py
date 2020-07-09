@@ -132,7 +132,7 @@ class Activater():
             return _setter.choose
         losses = []
         outputs = []
-        tf.get_variable_scope().reuse =tf.AUTO_REUSE
+        tf.get_variable_scope()._reuse =tf.AUTO_REUSE
         for i in range(self.micro_batch_num):
             loss, output, scopes = self.model_fn(None)
             losses.append(loss)
