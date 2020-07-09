@@ -163,7 +163,7 @@ class BertModel(object):
 
 
     if True:
-      with tf.variable_scope("embeddings",reuse=tf.AUTO_REUSE):
+      with tf.variable_scope("embeddings"):
         # Perform embedding lookup on the word ids.
         input_shape = get_shape_list(input_ids, expected_rank=2)
         batch_size = input_shape[0]
@@ -672,8 +672,7 @@ def attention_layer(from_tensor,
       num_attention_heads * size_per_head,
       activation=query_act,
       name="query",
-      kernel_initializer=create_initializer(initializer_range),
-      reuse=tf.AUTO_REUSE)
+      kernel_initializer=create_initializer(initializer_range))
 
   # `key_layer` = [B*T, N*H]
   key_layer = tf.layers.dense(
@@ -681,8 +680,7 @@ def attention_layer(from_tensor,
       num_attention_heads * size_per_head,
       activation=key_act,
       name="key",
-      kernel_initializer=create_initializer(initializer_range),
-      reuse=tf.AUTO_REUSE)
+      kernel_initializer=create_initializer(initializer_range))
 
   # `value_layer` = [B*T, N*H]
   value_layer = tf.layers.dense(
@@ -690,8 +688,7 @@ def attention_layer(from_tensor,
       num_attention_heads * size_per_head,
       activation=value_act,
       name="value",
-      kernel_initializer=create_initializer(initializer_range),
-      reuse=tf.AUTO_REUSE)
+      kernel_initializer=create_initializer(initializer_range))
 
   # `query_layer` = [B, N, F, H]
   query_layer = transpose_for_scores(query_layer, batch_size,
@@ -809,7 +806,7 @@ def transformer_model(input_tensor,
   Raises:
     ValueError: A Tensor shape or parameter is invalid.
   """
-  with tf.variable_scope("embeddings",reuse=tf.AUTO_REUSE):
+  with tf.variable_scope("embeddings"):
     if hidden_size % num_attention_heads != 0:
       raise ValueError(
         "The hidden size (%d) is not a multiple of the number of attention "
@@ -838,7 +835,7 @@ def transformer_model(input_tensor,
   all_layer_outputs = [embedding_output]
   all_layer_name= [embedding_scope_name]
   for layer_idx in range(num_hidden_layers):
-    with tf.variable_scope("layer_%d" % layer_idx,reuse=tf.AUTO_REUSE):
+    with tf.variable_scope("layer_%d" % layer_idx):
       layer_input = prev_output
 
       with tf.variable_scope("attention"):
