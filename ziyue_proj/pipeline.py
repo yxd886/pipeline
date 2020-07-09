@@ -73,7 +73,7 @@ class Activater():
         for operation in operations:
             name = operation.name
             if "gradients" in operation.name:
-                scope_name = name.split("/")[1]
+                scope_name = name.split("/")[2]
                 if scope_name in self.scopes:
                     result[name] = scope_name
                 elif scope_name[:-3] in self.scopes:
@@ -81,7 +81,7 @@ class Activater():
                 elif scope_name[:-2] in self.scopes:
                     result[name] = scope_name[:-2]
             else:
-                scope_name = name.split("/")[0]
+                scope_name = name.split("/")[1]
                 if scope_name in self.scopes:
                     result[name] = scope_name
                 elif scope_name[:-3] in self.scopes:
@@ -138,14 +138,15 @@ class Activater():
         assignment = {item:self.devices[0]  if i<20 else self.devices[1] for i,item in enumerate(self.scopes)}
         losses = []
         outputs = []
-        for i in range(self.micro_batch_num):
-            with tf.device(device_setter(assignment,self.devices)):
-                loss, output, scopes = self.model_fn(None)
-                losses.append(loss)
-                outputs.append(output[-1])
-        with tf.variable_scope("squad_output"):
-            new_loss =tf.add_n(losses)
-        self.train_op = tf.train.AdamOptimizer(learning_rate=0.01,beta1=0.9,beta2=0.98, epsilon=1e-9).minimize(new_loss)
+        with tf.variable_scope("Model",reuse=tf.AUTO_REUSE):
+            for i in range(self.micro_batch_num):
+                with tf.device(device_setter(assignment,self.devices)):
+                    loss, output, scopes = self.model_fn(None)
+                    losses.append(loss)
+                    outputs.append(output[-1])
+            with tf.variable_scope("squad_output"):
+                new_loss =tf.add_n(losses)
+            self.train_op = tf.train.AdamOptimizer(learning_rate=0.01,beta1=0.9,beta2=0.98, epsilon=1e-9).minimize(new_loss)
 
         init = tf.global_variables_initializer()
         self.graph = tf.get_default_graph()

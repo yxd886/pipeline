@@ -71,7 +71,7 @@ for dev in run_meta.step_stats.dev_stats:
 print(scopes)
 for name in names:
     if "gradients" in name:
-        scope = name.split("/")[1]
+        scope = name.split("/")[2]
         if scope not in scopes:
             print(scope)
             continue
@@ -79,7 +79,7 @@ for name in names:
             layer_result[scope] = [0, 0, 0, 0]
         layer_result[scope][1] += (result[name][1] - result[name][0])
     else:
-        scope = name.split("/")[0]
+        scope = name.split("/")[1]
         if scope not in scopes:
             print(scope)
             continue
