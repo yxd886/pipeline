@@ -41,7 +41,7 @@ for i in range(10):#warm up
 sess.run([train_op,loss], options=run_opt, run_metadata=run_meta, feed_dict=input_dict)
 
 result = {}
-layer_result = {}
+layer_result = {item:[0,0,0,0] for item in scopes}
 times = {}
 names = []
 with open("graph.pbtxt","w") as f:
