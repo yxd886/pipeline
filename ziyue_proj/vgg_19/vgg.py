@@ -97,6 +97,7 @@ def vgg_19(inputs,
     end_points: a dict of tensors with intermediate activations.
   """
   scopes = []
+  outputs= []
   if True:
     scope_name = tf.get_variable_scope().name
     end_points_collection = tf.get_variable_scope().name + '_end_points'
@@ -104,61 +105,77 @@ def vgg_19(inputs,
     with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],
                         outputs_collections=end_points_collection):
       net = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], scope='conv1')
-      scopes.append(scope_name+'/conv1')
+      scopes.append('conv1')
+      outputs.append(net)
       net = slim.max_pool2d(net, [2, 2], scope='pool1')
-      scopes.append(scope_name+'/pool1')
+      scopes.append('pool1')
+      outputs.append(net)
 
       net = slim.repeat(net, 2, slim.conv2d, 128, [3, 3], scope='conv2')
-      scopes.append(scope_name+'/conv2')
+      scopes.append('conv2')
+      outputs.append(net)
 
       net = slim.max_pool2d(net, [2, 2], scope='pool2')
-      scopes.append(scope_name+'/pool2')
+      scopes.append('pool2')
+      outputs.append(net)
 
       net = slim.repeat(net, 4, slim.conv2d, 256, [3, 3], scope='conv3')
-      scopes.append(scope_name+'/conv3')
+      scopes.append('conv3')
+      outputs.append(net)
 
       net = slim.max_pool2d(net, [2, 2], scope='pool3')
-      scopes.append(scope_name+'/pool3')
+      scopes.append('pool3')
+      outputs.append(net)
 
       net = slim.repeat(net, 4, slim.conv2d, 512, [3, 3], scope='conv4')
-      scopes.append(scope_name+'/conv4')
+      scopes.append('conv4')
+      outputs.append(net)
 
       net = slim.max_pool2d(net, [2, 2], scope='pool4')
-      scopes.append(scope_name+'/pool4')
+      scopes.append('pool4')
+      outputs.append(net)
 
       net = slim.repeat(net, 4, slim.conv2d, 512, [3, 3], scope='conv5')
-      scopes.append(scope_name+'/conv5')
+      scopes.append('conv5')
+      outputs.append(net)
 
       net = slim.max_pool2d(net, [2, 2], scope='pool5')
-      scopes.append(scope_name+'/pool5')
+      scopes.append('pool5')
+      outputs.append(net)
 
 
       # Use conv2d instead of fully_connected layers.
       net = slim.conv2d(net, 4096, [7, 7], padding=fc_conv_padding, scope='fc6')
-      scopes.append(scope_name+'/fc6')
+      scopes.append('fc6')
+      outputs.append(net)
 
       net = slim.dropout(net, dropout_keep_prob, is_training=is_training,
                          scope='dropout6')
-      scopes.append(scope_name+'/dropout6')
+      scopes.append('dropout6')
+      outputs.append(net)
 
       net = slim.conv2d(net, 4096, [1, 1], scope='fc7')
-      scopes.append(scope_name+'/fc7')
+      scopes.append('fc7')
+      outputs.append(net)
 
       # Convert end_points_collection into a end_point dict.
       if num_classes:
         net = slim.dropout(net, dropout_keep_prob, is_training=is_training,
                            scope='dropout7')
-        scopes.append(scope_name + '/dropout7')
+        scopes.append('dropout7')
+        outputs.append(net)
 
         net = slim.conv2d(net, num_classes, [1, 1],
                           activation_fn=None,
                           normalizer_fn=None,
                           scope='fc8')
-        scopes.append(scope_name + '/fc8')
-      end_points = slim.utils.convert_collection_to_dict(end_points_collection)
 
 
-      loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=y, logits=net)
-      loss = tf.reduce_sum(loss)
-      return loss, list(end_points.values()),list(end_points.keys())
+
+      with tf.variable_scope("fc8"):
+        loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=y, logits=net)
+        loss = tf.reduce_sum(loss)
+      scopes.append('fc8')
+      outputs.append(loss)
+      return loss, outputs,scopes
 vgg_19.default_image_size = 224
