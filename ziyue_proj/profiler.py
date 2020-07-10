@@ -7,19 +7,6 @@ import json
 from pipeline import model_fn
 
 
-def find_bp_point(graph,fp_list,operation_names):
-    reverse_fp = fp_list[::-1]
-    reverse_bp_name = ["gradients/"+item+"_grad" for item in reverse_fp]
-    for i,name in enumerate(reverse_bp_name):
-        for graph_name in operation_names:
-            if name in graph_name:
-                op = graph.get_operation_by_name(graph_name)
-                colocation = op.colocation_groups()
-                lead = colocation[0]
-                reverse_bp_name[i] =lead.decode().split("@")[1]
-                break
-    return reverse_bp_name
-
 config_dict =dict()
 if os.path.exists("config.json"):
     with open("config.json", "r") as f:
@@ -57,6 +44,8 @@ result = {}
 layer_result = {}
 times = {}
 names = []
+with open("graph.pbtxt","w") as f:
+    f.write(str(tf.get_default_graph().as_graph_def(add_shapes=True)))
 for dev in run_meta.step_stats.dev_stats:
     if 'Kernel' not in dev.device and 'stream' not in dev.device:  # TODO: if no GPU data for this op, use the CPU data
         continue
@@ -135,8 +124,7 @@ operation_names = [item.name for item in graph.get_operations()]
 import json
 with open("run_meta.pbtxt","w") as f:
     f.write(str(run_meta))
-with open("graph.pbtxt","w") as f:
-    f.write(str(tf.get_default_graph().as_graph_def(add_shapes=True)))
+
 '''
 result = {}
 names = [item.op.name for item in output]
