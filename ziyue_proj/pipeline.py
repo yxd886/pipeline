@@ -13,7 +13,7 @@ from tensorflow.distribute.cluster_resolver import TFConfigClusterResolver
 from tensorflow.python.ops import collective_ops
 sys.path.append('../')
 sys.path.append('./bert/')
-sys.path.append('./vgg19/')
+sys.path.append('./vgg_19/')
 import multiprocessing as mp
 
 
