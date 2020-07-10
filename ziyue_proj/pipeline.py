@@ -51,7 +51,7 @@ def model_fn(batch_size,model_name):
         import vgg
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
             x = tf.placeholder(tf.float32, shape=(batch_size, 224, 224, 3))
-            y = tf.placeholder(tf.float32, shape=(batch_size,1000))
+            y = tf.placeholder(tf.float32, shape=(batch_size,1,1,1000))
         loss, endpoints,scopes = vgg.vgg_19(x,y, 1000)
 
         return loss, [x] + endpoints, ["input"] + scopes

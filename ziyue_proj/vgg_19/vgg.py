@@ -145,7 +145,6 @@ def vgg_19(inputs,
       scopes.append(scope_name+'/fc7')
 
       # Convert end_points_collection into a end_point dict.
-      end_points = slim.utils.convert_collection_to_dict(end_points_collection)
       if num_classes:
         net = slim.dropout(net, dropout_keep_prob, is_training=is_training,
                            scope='dropout7')
@@ -156,9 +155,10 @@ def vgg_19(inputs,
                           normalizer_fn=None,
                           scope='fc8')
         scopes.append(scope_name + '/fc8')
+      end_points = slim.utils.convert_collection_to_dict(end_points_collection)
 
-        end_points[scope_name + '/fc8'] = net
+
       loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=y, logits=net)
       loss = tf.reduce_sum(loss)
-      return loss, end_points,scopes
+      return loss, end_points.keys(),end_points.values()
 vgg_19.default_image_size = 224
