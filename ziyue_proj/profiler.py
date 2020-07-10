@@ -25,8 +25,10 @@ if os.path.exists("config.json"):
     with open("config.json", "r") as f:
         config_dict = json.load(f)
 batch_size = config_dict.get("batch_size", 6)
+model_name = config_dict.get("model_name", "bert")
+
 with tf.device("/device:GPU:0"):
-    loss,output,scopes = model_fn(batch_size)
+    loss,output,scopes = model_fn(batch_size,model_name)
     #vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
     #gradients = tf.compat.v1.gradients(loss, vars, colocate_gradients_with_ops=True)
     train_op = tf.train.AdamOptimizer(learning_rate=0.01,beta1=0.9,beta2=0.98, epsilon=1e-9).minimize(loss)

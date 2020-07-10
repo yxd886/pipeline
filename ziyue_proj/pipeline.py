@@ -13,7 +13,7 @@ from tensorflow.distribute.cluster_resolver import TFConfigClusterResolver
 from tensorflow.python.ops import collective_ops
 sys.path.append('../')
 sys.path.append('./bert/')
-
+sys.path.append('./vgg19/')
 import multiprocessing as mp
 
 
@@ -30,29 +30,39 @@ def setup_workers(workers, protocol="grpc"):
     time.sleep(1)
 
 
-def model_fn(batch_size):
-    from bert.runsquad import new_model_fn_builder
-    import modeling
-    bert_config = modeling.BertConfig.from_json_file("bert/bert_large/bert_config.json")
-    model = new_model_fn_builder(bert_config)
-    features = {}
-    if True:
-        with tf.variable_scope("input",reuse=tf.AUTO_REUSE):
-            features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
-            features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
-            features["segment_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
-            features["start_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
-            features["end_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
-        loss,layer_outputs, layer_scopes= model(features)
-    return loss,[features["input_ids"]]+layer_outputs, ["input"]+layer_scopes
+def model_fn(batch_size,model_name):
+    if model_name=="bert":
+        from bert.runsquad import new_model_fn_builder
+        import modeling
+        bert_config = modeling.BertConfig.from_json_file("bert/bert_large/bert_config.json")
+        model = new_model_fn_builder(bert_config)
+        features = {}
+        if True:
+            with tf.variable_scope("input",reuse=tf.AUTO_REUSE):
+                features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
+                features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
+                features["segment_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 64)), tf.int32)
+                features["start_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
+                features["end_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
+            loss,layer_outputs, layer_scopes= model(features)
+            return loss, [features["input_ids"]] + layer_outputs, ["input"] + layer_scopes
 
+    elif model_name=="vgg":
+        import vgg
+        with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
+            x = tf.placeholder(tf.float32, shape=(batch_size, 224, 224, 3))
+            y = tf.placeholder(tf.float32, shape=(batch_size,1000))
+        loss, endpoints,scopes = vgg.vgg_19(x,y, 1000)
+
+        return loss, [x] + endpoints, ["input"] + scopes
 
 class Activater():
-    def __init__(self,micro_batch_num,batch_size):
+    def __init__(self,micro_batch_num,batch_size,model_name):
         self.model_fn =model_fn
         self.devices = devices
         self.micro_batch_num = micro_batch_num
         self.batch_size = batch_size
+        self.model_name = model_name
 
     def compute_scope_operation_dict(self):
         result = {item:[] for item in self.scopes}
@@ -134,7 +144,7 @@ class Activater():
         outputs = []
         tf.get_variable_scope()._reuse =tf.AUTO_REUSE
         for i in range(self.micro_batch_num):
-            loss, output, scopes = self.model_fn(None)
+            loss, output, scopes = self.model_fn(None,self.model_name)
             losses.append(loss)
             outputs.append(output[-1])
         self.scopes = scopes
@@ -203,6 +213,7 @@ if __name__ == '__main__':
     devices = config_dict.get("devices", [""])
 
     workers = config_dict.get("workers", ["10.28.1.26:3901","10.28.1.17:3901","10.28.1.16:3901"])
+    model_name = config_dict.get("model_name", "bert")
 
     clus = dict()
     clus["cluster"] = {"worker": workers}
@@ -212,5 +223,5 @@ if __name__ == '__main__':
     micro_batch_num =  config_dict.get("micro_batch_num",16)
     batch_size =  config_dict.get("batch_size",6)
 
-    act = Activater(micro_batch_num = micro_batch_num,batch_size=batch_size)
+    act = Activater(micro_batch_num = micro_batch_num,batch_size=batch_size,model_name =model_name)
     act.activate_unit()
