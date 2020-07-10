@@ -160,5 +160,5 @@ def vgg_19(inputs,
 
       loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=y, logits=net)
       loss = tf.reduce_sum(loss)
-      return loss, end_points.keys(),end_points.values()
+      return loss, list(end_points.values()),list(end_points.keys())
 vgg_19.default_image_size = 224
