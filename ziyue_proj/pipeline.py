@@ -148,7 +148,7 @@ class Activater():
             losses.append(loss)
             outputs.append(output[-1])
         self.scopes = scopes
-        with tf.variable_scope("squad_output"):
+        with tf.variable_scope(self.scopes[-1]):
             new_loss =tf.add_n(losses)
         self.train_op = tf.train.AdamOptimizer(learning_rate=0.01,beta1=0.9,beta2=0.98, epsilon=1e-9).minimize(new_loss)
 
