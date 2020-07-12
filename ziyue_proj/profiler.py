@@ -56,7 +56,8 @@ for dev in run_meta.step_stats.dev_stats:
             result[name] = [float('inf'), 0]
         result[name][0] = min(result[name][0], node.all_start_micros)
         result[name][1] = max(result[name][1], node.all_start_micros + node.all_end_rel_micros)
-        names.append(name)
+        if name not in names:
+            names.append(name)
 
 
 # layer time
