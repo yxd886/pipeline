@@ -44,6 +44,7 @@ result = {}
 layer_result = {item:[0,0,0,0] for item in scopes}
 times = {}
 names = []
+scope_name_dict = {item:[] for item in scopes}
 with open("graph.pbtxt","w") as f:
     f.write(str(tf.get_default_graph().as_graph_def(add_shapes=True)))
 for dev in run_meta.step_stats.dev_stats:
@@ -66,6 +67,7 @@ for name in names:
         if scope not in scopes:
             print(scope)
             continue
+        scope_name_dict[scope].append(name)
         if scope not in layer_result:
             layer_result[scope] = [0, 0, 0, 0]
         layer_result[scope][1] += (result[name][1] - result[name][0])
@@ -74,6 +76,7 @@ for name in names:
         if scope not in scopes:
             print(scope)
             continue
+        scope_name_dict[scope].append(name)
         if scope not in layer_result:
             layer_result[scope] = [0, 0, 0, 0]
         layer_result[scope][0] += (result[name][1] - result[name][0])
@@ -115,6 +118,9 @@ for i,tensor in enumerate(output):
 import json
 with open("profile.json","w") as f:
     json.dump(layer_result,f,indent=2,sort_keys=True)
+
+with open("scope_name_dict.json","w") as f:
+    json.dump(scope_name_dict,f,indent=2,sort_keys=True)
 
 
 graph = tf.get_default_graph()
