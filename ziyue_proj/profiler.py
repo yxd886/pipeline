@@ -18,8 +18,7 @@ with tf.device("/device:GPU:0"):
     loss,output,scopes = model_fn(batch_size,model_name)
     #vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
     #gradients = tf.compat.v1.gradients(loss, vars, colocate_gradients_with_ops=True)
-    train_op = tf.train.AdamOptimizer(learning_rate=0.01,beta1=0.9,beta2=0.98, epsilon=1e-9).minimize(loss)
-
+    train_op =tf.train.GradientDescentOptimizer(0.2).minimize(loss)
     init_op = tf.global_variables_initializer()
     graph =tf.get_default_graph()
     placeholders = [node.outputs[0] for node in graph.get_operations() if node.node_def.op == 'Placeholder']
