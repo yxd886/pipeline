@@ -39,9 +39,9 @@ def model_fn(batch_size,model_name):
         features = {}
         if True:
             with tf.variable_scope("input",reuse=tf.AUTO_REUSE):
-                features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 192)), tf.int32)
-                features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 192)), tf.int32)
-                features["segment_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 192)), tf.int32)
+                features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 128)), tf.int32)
+                features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 128)), tf.int32)
+                features["segment_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 128)), tf.int32)
                 features["start_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
                 features["end_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
             loss,layer_outputs, layer_scopes= model(features)

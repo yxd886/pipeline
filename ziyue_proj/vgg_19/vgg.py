@@ -99,6 +99,7 @@ def vgg_19(inputs,
   scopes = []
   outputs= []
   if True:
+    tf.get_variable_scope()._reuse=tf.AUTO_REUSE
     scope_name = tf.get_variable_scope().name
     end_points_collection = tf.get_variable_scope().name + '_end_points'
     # Collect outputs for conv2d, fully_connected and max_pool2d.
