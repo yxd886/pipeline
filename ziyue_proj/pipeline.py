@@ -47,7 +47,7 @@ def model_fn(batch_size,model_name):
             loss,layer_outputs, layer_scopes= model(features)
             return loss, [features["input_ids"]] + layer_outputs, ["input"] + layer_scopes
 
-    elif model_name=="vgg":
+    elif model_name=="vgg_19":
         import vgg
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
             x = tf.placeholder(tf.float32, shape=(batch_size, 224, 224, 3))
@@ -117,6 +117,7 @@ class Activater():
         '''
         return result
     def build_model(self):
+        tf.reset_default_graph()
         self.losses=[]
         self.vars = []
         self.avg_gradient=[]
@@ -154,13 +155,20 @@ class Activater():
         init = tf.global_variables_initializer()
         self.graph = tf.get_default_graph()
         self.gdef = tf.get_default_graph().as_graph_def(add_shapes=True)
-    def change_model(self):
+    def change_model(self,index,config):
 
-        with open("init_graph.pbtxt", "w") as f:
+        with open( self.model_name+"/"+str(index)+"/init_graph.pbtxt", "w") as f:
             f.write(str(tf.get_default_graph().as_graph_def(add_shapes=True)))
 
         strategy = {}
         assignment = {}
+        for i in range(int(len(config)//2)):
+            indexs = config[i*2]
+            strategy = config[i*2+1]
+            for j in range(indexs[0],indexs[1]+1,1):
+                assignment[self.scopes[j]] = strategy
+
+        '''
         for i in range(len(self.scopes)):
             if i <8:
                 assignment[self.scopes[i]] = [0,0]
@@ -169,7 +177,7 @@ class Activater():
             else:
                 assignment[self.scopes[i]] = [2,3]
 
-
+        '''
         op_scope_dict = self.compute_operation_scope_dict()
         for op in op_scope_dict:
             place = [0]*len(self.devices)
@@ -182,7 +190,7 @@ class Activater():
                 print(op.name)
                 strategy[op.name] = [1]+place
         import pickle as pkl
-        with open("strategy.pkl","wb") as f:
+        with open( self.model_name+"/"+str(index)+"/strategy.pkl","wb") as f:
             pkl.dump(strategy,f)
         import tge
 
@@ -196,14 +204,13 @@ class Activater():
              .compile()
              .get_result()
              )
-
-        with open("modified.pbtxt", "w") as fo:
+        with open( self.model_name+"/"+str(index)+"/modified.pbtxt", "w") as fo:
             fo.write(pbtf.MessageToString(g))
 
     def activate_unit(self):
-        tf.reset_default_graph()
-        self.build_model()
-        self.change_model()
+        for i in range(1,5,1):
+            self.build_model()
+            self.change_model(i,four_strategies[i-1])
 if __name__ == '__main__':
     config_dict =dict()
     if os.path.exists("config.json"):
@@ -211,16 +218,17 @@ if __name__ == '__main__':
             config_dict = json.load(f)
     devices = config_dict.get("devices", [""])
 
-    workers = config_dict.get("workers", ["10.28.1.26:3901","10.28.1.17:3901","10.28.1.16:3901"])
     model_name = config_dict.get("model_name", "bert")
 
-    clus = dict()
-    clus["cluster"] = {"worker": workers}
-    clus["task"] = {"type": "worker", "index": 0}
-    os.environ["TF_CONFIG"] = json.dumps(clus)
+
 
     micro_batch_num =  config_dict.get("micro_batch_num",16)
     batch_size =  config_dict.get("batch_size",6)
+    strategy_1 =  config_dict.get("strategy_1",[[0,16],[0,1]])
+    strategy_2 =  config_dict.get("strategy_2",[[0,16],[0,1]])
+    strategy_3 =  config_dict.get("strategy_3",[[0,16],[0,1]])
+    strategy_4 =  config_dict.get("strategy_4",[[0,16],[0,1]])
+    four_strategies = [strategy_1,strategy_2,strategy_3,strategy_4]
 
     act = Activater(micro_batch_num = micro_batch_num,batch_size=batch_size,model_name =model_name)
     act.activate_unit()
