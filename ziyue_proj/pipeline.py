@@ -56,6 +56,15 @@ def model_fn(batch_size,model_name):
 
         return loss, [x] + endpoints, ["input"] + scopes
 
+    elif model_name=="resnet":
+        import resnet
+        with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
+            x = tf.placeholder(tf.float32, shape=(batch_size, 224, 224, 3))
+            y = tf.placeholder(tf.float32, shape=(batch_size,1,1,1000))
+        loss, endpoints,scopes = resnet.resnet_v2_152(x,y, 1000)
+
+        return loss, [x] + endpoints, ["input"] + scopes
+
 class Activater():
     def __init__(self,micro_batch_num,batch_size,model_name):
         self.model_fn =model_fn
