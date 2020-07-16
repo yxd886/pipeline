@@ -256,7 +256,7 @@ def resnet_v2_152(inputs,
   with tf.variable_scope(scopes[-1]):
     loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=y, logits=net)
     loss = tf.reduce_sum(loss)
-    outputs[-1](loss)
+    outputs[-1]=loss
   return loss,outputs,scopes
 resnet_v2_152.default_image_size = resnet_v2.default_image_size
 
