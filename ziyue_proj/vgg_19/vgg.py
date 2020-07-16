@@ -144,28 +144,28 @@ def vgg_19(inputs,
       scopes.append('pool5')
       outputs.append(net)
 
+
       # Use conv2d instead of fully_connected layers.
       net = slim.conv2d(net, 4096, [7, 7], padding=fc_conv_padding, scope='fc6')
       scopes.append('fc6')
       outputs.append(net)
-      net = slim.conv2d(net, 4096, [7, 7], padding=fc_conv_padding, scope='fc7')
-      scopes.append('fc7')
-      outputs.append(net)
-      net = slim.conv2d(net, 4096, [7, 7], padding=fc_conv_padding, scope='fc8')
-      scopes.append('fc8')
-      outputs.append(net)
-
-      net = slim.conv2d(net, 4096, [7, 7], padding=fc_conv_padding, scope='fc9')
-      scopes.append('fc9')
-      outputs.append(net)
 
       net = slim.dropout(net, dropout_keep_prob, is_training=is_training,
-                         scope='dropout9')
-      scopes.append('dropout9')
+                         scope='dropout6')
+      scopes.append('dropout6')
       outputs.append(net)
 
+      net = slim.conv2d(net, 4096, [1, 1], scope='fc7')
+      scopes.append('fc7')
+      outputs.append(net)
+      net = slim.conv2d(net, 4096, [1, 1], scope='fc8')
+      scopes.append('fc7')
+      outputs.append(net)
+      net = slim.conv2d(net, 4096, [1, 1], scope='fc9')
+      scopes.append('fc7')
+      outputs.append(net)
       net = slim.conv2d(net, 4096, [1, 1], scope='fc10')
-      scopes.append('fc10')
+      scopes.append('fc7')
       outputs.append(net)
 
       # Convert end_points_collection into a end_point dict.
