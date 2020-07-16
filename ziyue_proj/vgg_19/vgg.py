@@ -159,13 +159,13 @@ def vgg_19(inputs,
       scopes.append('fc7')
       outputs.append(net)
       net = slim.conv2d(net, 4096, [1, 1], scope='fc8')
-      scopes.append('fc7')
+      scopes.append('fc8')
       outputs.append(net)
       net = slim.conv2d(net, 4096, [1, 1], scope='fc9')
-      scopes.append('fc7')
+      scopes.append('fc9')
       outputs.append(net)
       net = slim.conv2d(net, 4096, [1, 1], scope='fc10')
-      scopes.append('fc7')
+      scopes.append('fc10')
       outputs.append(net)
 
       # Convert end_points_collection into a end_point dict.
