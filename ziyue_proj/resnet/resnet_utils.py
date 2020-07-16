@@ -187,7 +187,7 @@ def stack_blocks_dense(net, blocks, output_stride=None,
           block_stride = unit.get('stride', 1)
           unit = dict(unit, stride=1)
 
-        with tf.variable_scope(block.scope+'/unit_%d' % (i + 1), values=[net]):
+        with tf.variable_scope(block.scope+'_unit_%d' % (i + 1), values=[net]):
           # If we have reached the target output_stride, then we need to employ
           # atrous convolution with stride=1 and multiply the atrous rate by the
           # current unit's stride for use in subsequent layers.
