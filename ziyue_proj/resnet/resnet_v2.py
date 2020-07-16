@@ -194,6 +194,11 @@ def resnet_v2(inputs,
 
         outputs.append(net)
         scopes.append("postnorm")
+
+        net = tf.reduce_mean(
+            input_tensor=net, axis=[1, 2], name='pool5', keepdims=True)
+        outputs.append(net)
+        scopes.append("pool5")
         net = slim.conv2d(net, num_classes, [1, 1], activation_fn=None,
                             normalizer_fn=None, scope='logits')
         outputs.append(net)
