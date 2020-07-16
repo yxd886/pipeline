@@ -144,53 +144,48 @@ def vgg_19(inputs,
       scopes.append('pool5')
       outputs.append(net)
 
-      net = slim.repeat(net, 4, slim.conv2d, 512, [3, 3], scope='conv6')
-      scopes.append('conv6')
-      outputs.append(net)
-
-      net = slim.max_pool2d(net, [2, 2], scope='pool5')
-      scopes.append('pool6')
-      outputs.append(net)
-
-      net = slim.repeat(net, 4, slim.conv2d, 512, [3, 3], scope='conv7')
-      scopes.append('conv7')
-      outputs.append(net)
-
-      net = slim.max_pool2d(net, [2, 2], scope='pool5')
-      scopes.append('pool7')
-      outputs.append(net)
       # Use conv2d instead of fully_connected layers.
+      net = slim.conv2d(net, 4096, [7, 7], padding=fc_conv_padding, scope='fc6')
+      scopes.append('fc6')
+      outputs.append(net)
+      net = slim.conv2d(net, 4096, [7, 7], padding=fc_conv_padding, scope='fc7')
+      scopes.append('fc7')
+      outputs.append(net)
       net = slim.conv2d(net, 4096, [7, 7], padding=fc_conv_padding, scope='fc8')
       scopes.append('fc8')
       outputs.append(net)
 
-      net = slim.dropout(net, dropout_keep_prob, is_training=is_training,
-                         scope='dropout8')
-      scopes.append('dropout8')
+      net = slim.conv2d(net, 4096, [7, 7], padding=fc_conv_padding, scope='fc9')
+      scopes.append('fc9')
       outputs.append(net)
 
-      net = slim.conv2d(net, 4096, [1, 1], scope='fc9')
-      scopes.append('fc9')
+      net = slim.dropout(net, dropout_keep_prob, is_training=is_training,
+                         scope='dropout9')
+      scopes.append('dropout9')
+      outputs.append(net)
+
+      net = slim.conv2d(net, 4096, [1, 1], scope='fc10')
+      scopes.append('fc10')
       outputs.append(net)
 
       # Convert end_points_collection into a end_point dict.
       if num_classes:
         net = slim.dropout(net, dropout_keep_prob, is_training=is_training,
-                           scope='dropout9')
-        scopes.append('dropout9')
+                           scope='dropout10')
+        scopes.append('dropout10')
         outputs.append(net)
 
         net = slim.conv2d(net, num_classes, [1, 1],
                           activation_fn=None,
                           normalizer_fn=None,
-                          scope='fc10')
+                          scope='fc11')
 
 
 
-      with tf.variable_scope("fc10"):
+      with tf.variable_scope("fc11"):
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=y, logits=net)
         loss = tf.reduce_sum(loss)
-      scopes.append('fc10')
+      scopes.append('fc11')
       outputs.append(loss)
       return loss, outputs,scopes
 vgg_19.default_image_size = 224
