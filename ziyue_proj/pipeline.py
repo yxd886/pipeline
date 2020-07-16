@@ -173,9 +173,9 @@ class Activater():
         assignment = {}
         for i in range(int(len(config)//2)):
             indexs = config[i*2]
-            strategy = config[i*2+1]
+            _strategy = config[i*2+1]
             for j in range(indexs[0],indexs[1]+1,1):
-                assignment[self.scopes[j]] = strategy
+                assignment[self.scopes[j]] = _strategy
 
         '''
         for i in range(len(self.scopes)):
