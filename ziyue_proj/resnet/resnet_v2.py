@@ -180,24 +180,25 @@ def resnet_v2(inputs,
   Raises:
     ValueError: If the target output_stride is not valid.
   """
-  scopes = []
-  outputs= []
+
   if True:
     if True:
       if True:
         net = inputs
-        net = resnet_utils.stack_blocks_dense(net, blocks, output_stride)
+        net,outputs,scopes= resnet_utils.stack_blocks_dense(net, blocks, output_stride)
         # This is needed because the pre-activation variant does not have batch
         # normalization or activation functions in the residual unit output. See
         # Appendix of [2].
         net = slim.batch_norm(net, activation_fn=tf.nn.relu, scope='postnorm')
         # Convert end_points_collection into a dictionary of end_points.
 
-
+        outputs.append(net)
+        scopes.append("postnorm")
         if num_classes:
           net = slim.conv2d(net, num_classes, [1, 1], activation_fn=None,
                             normalizer_fn=None, scope='logits')
-
+          outputs.append(net)
+          scopes.append("logits")
         return net, outputs,scopes
 resnet_v2.default_image_size = 224
 
