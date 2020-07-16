@@ -194,11 +194,10 @@ def resnet_v2(inputs,
 
         outputs.append(net)
         scopes.append("postnorm")
-        if num_classes:
-          net = slim.conv2d(net, num_classes, [1, 1], activation_fn=None,
+        net = slim.conv2d(net, num_classes, [1, 1], activation_fn=None,
                             normalizer_fn=None, scope='logits')
-          outputs.append(net)
-          scopes.append("logits")
+        outputs.append(net)
+        scopes.append("logits")
         return net, outputs,scopes
 resnet_v2.default_image_size = 224
 
