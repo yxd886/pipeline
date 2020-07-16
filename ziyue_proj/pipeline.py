@@ -14,6 +14,8 @@ from tensorflow.python.ops import collective_ops
 sys.path.append('../')
 sys.path.append('./bert/')
 sys.path.append('./vgg_19/')
+sys.path.append('./resnet/')
+
 import multiprocessing as mp
 
 
@@ -57,11 +59,11 @@ def model_fn(batch_size,model_name):
         return loss, [x] + endpoints, ["input"] + scopes
 
     elif model_name=="resnet":
-        import resnet
+        import resnet_v2
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
             x = tf.placeholder(tf.float32, shape=(batch_size, 224, 224, 3))
             y = tf.placeholder(tf.float32, shape=(batch_size,1,1,1000))
-        loss, endpoints,scopes = resnet.resnet_v2_152(x,y, 1000)
+        loss, endpoints,scopes = resnet_v2.resnet_v2_152(x,y, 1000)
 
         return loss, [x] + endpoints, ["input"] + scopes
 
