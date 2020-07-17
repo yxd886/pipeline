@@ -32,7 +32,7 @@ def setup_workers(workers, protocol="grpc"):
 model_name = config_dict.get("model_name", "bert")
 activate_graph=config_dict.get("activate_graph", "1")
 activate_graphs = [model_name+"/"+activate_graph+"/modified.pbtxt"]
-sinks = config_dict.get("activate_sink", ["Adam"])
+sinks = config_dict.get("activate_sink", ["GradientDescent"])
 class Activater():
     def __init__(self, activate_path, sinks=["Adam"]):
         self.graph_defs = []

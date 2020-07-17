@@ -41,9 +41,9 @@ def model_fn(batch_size,model_name):
         features = {}
         if True:
             with tf.variable_scope("input",reuse=tf.AUTO_REUSE):
-                features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 128)), tf.int32)
-                features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 128)), tf.int32)
-                features["segment_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 128)), tf.int32)
+                features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 384)), tf.int32)
+                features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 384)), tf.int32)
+                features["segment_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 384)), tf.int32)
                 features["start_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
                 features["end_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
             loss,layer_outputs, layer_scopes= model(features)
@@ -162,7 +162,8 @@ class Activater():
         self.scopes = scopes
         with tf.variable_scope(self.scopes[-1]):
             new_loss =tf.add_n(losses)
-        self.train_op = tf.train.AdamOptimizer(learning_rate=0.2, beta1=0.9, beta2=0.98, epsilon=1e-9).minimize(new_loss)
+        #self.train_op = tf.train.AdamOptimizer(learning_rate=0.2, beta1=0.9, beta2=0.98, epsilon=1e-9).minimize(new_loss)
+        self.train_op = tf.train.GradientDescentOptimizer(learning_rate=0.2).minimize(new_loss)
 
         init = tf.global_variables_initializer()
         self.graph = tf.get_default_graph()
@@ -209,7 +210,7 @@ class Activater():
         # options = [[0, 1], [1, 0], [0, 2], [2, 0], [1, 1]]
         # strategy = { node.name: [np.random.randint(0, 2)] + options[np.random.randint(0, len(options))] for node in gdef.node }
 
-        g = (tge.TGE(self.gdef, self.devices, ["Adam"])
+        g = (tge.TGE(self.gdef, self.devices, ["GradientDescent"])
              .custom(strategy)
              .replace_placeholder(self.batch_size)
              .use_collective()
