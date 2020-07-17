@@ -220,7 +220,7 @@ class Activater():
             fo.write(pbtf.MessageToString(g))
 
     def activate_unit(self):
-        for i in range(1,5,1):
+        for i in range(1,9,1):
             self.build_model()
             self.change_model(i,four_strategies[i-1])
 if __name__ == '__main__':
@@ -240,7 +240,12 @@ if __name__ == '__main__':
     strategy_2 =  config_dict.get("strategy_2",[[0,16],[0,1]])
     strategy_3 =  config_dict.get("strategy_3",[[0,16],[0,1]])
     strategy_4 =  config_dict.get("strategy_4",[[0,16],[0,1]])
-    four_strategies = [strategy_1,strategy_2,strategy_3,strategy_4]
+    strategy_5 =  config_dict.get("strategy_5",[[0,16],[0,1]])
+    strategy_6 =  config_dict.get("strategy_6",[[0,16],[0,1]])
+    strategy_7 =  config_dict.get("strategy_7",[[0,16],[0,1]])
+    strategy_8 =  config_dict.get("strategy_8",[[0,16],[0,1]])
+
+    four_strategies = [strategy_1,strategy_2,strategy_3,strategy_4,strategy_5,strategy_6,strategy_7,strategy_8]
 
     act = Activater(micro_batch_num = micro_batch_num,batch_size=batch_size,model_name =model_name)
     act.activate_unit()
