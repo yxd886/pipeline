@@ -451,7 +451,7 @@ def inception_v3_base(inputs,
       end_points[end_point] = net
       outputs.append(net)
       scopes.append(end_point)
-      if end_point == final_endpoint: return net, end_points
+      if end_point == final_endpoint: return net, outputs,scopes
     raise ValueError('Unknown final endpoint %s' % final_endpoint)
 
 
