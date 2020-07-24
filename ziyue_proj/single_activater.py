@@ -51,7 +51,7 @@ class Activater():
         self.server=None
 
     def activate_unit(self,path,graph_def):
-        setup_workers(workers, "grpc+verbs")
+        #setup_workers(workers, "grpc+verbs")
         tf.reset_default_graph()
         resolver = TFConfigClusterResolver()
         cluster = resolver.cluster_spec()
