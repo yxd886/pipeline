@@ -205,7 +205,8 @@ class Activater():
         for op in op_scope_dict:
             place = [0]*len(self.devices)
             decision = assignment[op_scope_dict[op]]
-            for i in range(decision[0],decision[1]+1,1):
+            #for i in range(decision[0],decision[1]+1,1):
+            for i in decision:
                 place[i] = 1
             strategy[op] = [1]+place
         for op in self.graph.get_operations():
