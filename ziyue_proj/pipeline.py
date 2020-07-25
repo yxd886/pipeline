@@ -81,7 +81,7 @@ def model_fn(batch_size,model_name):
             x = tf.placeholder(tf.float32, shape=(batch_size, 100))
             decode_input = tf.placeholder(tf.float32, shape=(batch_size, 100))
             y = tf.placeholder(tf.float32, shape=(batch_size,100,32000))
-        loss, endpoints,scopes = transformer.Transformer.train(x,decode_input, y)
+        loss, endpoints,scopes = transformer.Transformer().train(x,decode_input, y)
 
 
 
