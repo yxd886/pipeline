@@ -78,11 +78,11 @@ def model_fn(batch_size,model_name):
     elif model_name=="transformer":
         import transformer
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
-            x = tf.placeholder(tf.float32, shape=(batch_size, 100))
-            decode_input = tf.placeholder(tf.float32, shape=(batch_size, 100))
+            x = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 100)))
+            decode_input = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 100)))
             y = tf.placeholder(tf.float32, shape=(batch_size,100,32000))
         loss, endpoints,scopes = transformer.Transformer().train(x,decode_input, y)
-
+        return loss, [x] + endpoints, ["input"] + scopes
 
 
 class Activater():
