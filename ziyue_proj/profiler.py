@@ -129,7 +129,7 @@ operation_names = [item.name for item in graph.get_operations()]
 
 contents = []
 for i,scope in enumerate(scopes):
-    contents.append("node{} -- {} -- forward_compute_time={}, backward_compute_time={}, activation_size={}, parameter_size={}\n".format(i,scope,layer_result[scope][0],layer_result[scope][1],layer_result[scope][2],layer_result[scope][3]))
+    contents.append("node{} -- {} -- forward_compute_time={}, backward_compute_time={}, activation_size={}, parameter_size={}\n".format(i,scope,layer_result[scope][0]/1000000,layer_result[scope][1]/1000000,layer_result[scope][2],layer_result[scope][3]))
 for i in range(len(scopes)-1):
     contents.append("\tnode{} -- node{}\n".format(i,i+1))
 with open("graph.txt","w") as f:
