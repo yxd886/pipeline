@@ -14,6 +14,8 @@ from modules import get_token_embeddings, ff, positional_encoding, multihead_att
 from utils import convert_idx_to_token_tensor
 from tqdm import tqdm
 import logging
+from hparams import Hparams
+from utils import save_hparams, save_variable_specs, get_hypotheses, calc_bleu
 
 logging.basicConfig(level=logging.INFO)
 
@@ -30,7 +32,11 @@ class Transformer:
         sents2: str tensor. (N,)
     training: boolean.
     '''
-    def __init__(self, hp):
+    def __init__(self):
+        hparams = Hparams()
+        parser = hparams.parser
+        hp = parser.parse_args()
+        save_hparams(hp, hp.logdir)
         self.hp = hp
 
 
@@ -91,7 +97,6 @@ class Transformer:
         scopes = []
         outputs = []
         with tf.variable_scope("decoder_embedding_lookup", reuse=tf.AUTO_REUSE):
-            decoder_inputs, y, seqlens, sents2 = ys
             # tgt_masks
             tgt_masks = tf.math.equal(decoder_inputs, 0)  # (N, T2)
 
@@ -133,7 +138,7 @@ class Transformer:
                 outputs.append(dec)
 
 
-        return dec, sents2,outputs,scopes
+        return dec,outputs,scopes
 
     def train(self, xs, decode_inputs,y):
         '''
@@ -145,7 +150,7 @@ class Transformer:
         '''
         # forward
         memory, src_masks,outputs,scopes = self.encode(xs)
-        dec,sents2,outputs1,scopes1 = self.decode(decode_inputs, memory, src_masks)
+        dec,outputs1,scopes1 = self.decode(decode_inputs, memory, src_masks)
         # Final linear projection (embedding weights are shared)
 
         outputs = outputs+outputs1

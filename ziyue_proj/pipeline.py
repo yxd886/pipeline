@@ -16,7 +16,7 @@ sys.path.append('./bert/')
 sys.path.append('./vgg_19/')
 sys.path.append('./resnet/')
 sys.path.append('./inception_v3/')
-
+sys.path.append('./transformer/')
 import multiprocessing as mp
 
 
@@ -74,6 +74,14 @@ def model_fn(batch_size,model_name):
             y = tf.placeholder(tf.float32, shape=(batch_size, 1000))
         loss,endpoints, scopes = inception_v3.inception_v3(x,y,1000)
         return loss, [x] + endpoints, ["input"] + scopes
+
+    elif model_name=="transformer":
+        import transformer
+        with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
+            x = tf.placeholder(tf.float32, shape=(batch_size, 100))
+            decode_input = tf.placeholder(tf.float32, shape=(batch_size, 100))
+            y = tf.placeholder(tf.float32, shape=(batch_size,100,32000))
+        loss, endpoints,scopes = transformer.Transformer.train(x,decode_input, y)
 
 
 
