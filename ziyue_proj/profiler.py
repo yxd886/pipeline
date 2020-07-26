@@ -15,6 +15,7 @@ batch_size = config_dict.get("batch_size", 6)
 model_name = config_dict.get("model_name", "bert")
 
 with tf.device("/device:GPU:0"):
+    tf.get_variable_scope()._reuse = tf.AUTO_REUSE
     loss,output,scopes = model_fn(batch_size,model_name)
     #vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
     #gradients = tf.compat.v1.gradients(loss, vars, colocate_gradients_with_ops=True)

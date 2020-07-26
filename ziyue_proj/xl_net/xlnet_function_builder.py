@@ -213,7 +213,7 @@ def get_qa_outputs(FLAGS, features, is_training):
   """Loss for downstream span-extraction QA tasks such as SQuAD."""
   outputs = []
   scopes = []
-  with tf.variable_scope("preprocess_input"):
+  with tf.variable_scope("preprocess_input",reuse=tf.AUTO_REUSE):
     inp = tf.transpose(features["input_ids"], [1, 0])
     seg_id = tf.transpose(features["segment_ids"], [1, 0])
     inp_mask = tf.transpose(features["input_mask"], [1, 0])
@@ -241,7 +241,7 @@ def get_qa_outputs(FLAGS, features, is_training):
 
 
   # logit of the start position
-  with tf.variable_scope("logits"):
+  with tf.variable_scope("logits",reuse=tf.AUTO_REUSE):
     start_logits = tf.layers.dense(
         output,
         1,
