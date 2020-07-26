@@ -222,7 +222,7 @@ def get_qa_outputs(FLAGS, features, is_training):
     seq_len = tf.shape(inp)[0]
     outputs.append(inp)
     scopes.append(tf.get_variable_scope().name)
-  xlnet_config = xlnet.XLNetConfig(json_path=FLAGS.model_config_path)
+  xlnet_config = xlnet.XLNetConfig(json_path="xl_net/xlnet_large/xlnet_config.json")
   run_config = xlnet.create_run_config(is_training, True, FLAGS)
 
   xlnet_model = xlnet.XLNetModel(
