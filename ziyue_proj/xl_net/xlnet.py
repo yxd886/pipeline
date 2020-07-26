@@ -210,7 +210,7 @@ class XLNetModel(object):
     tfm_args.update(input_args)
 
 
-    (self.output, self.new_mems, self.lookup_table,self.outputs,self.scopes) = modeling.transformer_xl(**tfm_args)
+    (self.output, self.new_mems, self.lookup_table,self.outputs,self.scopes) = xlnet_modeling.transformer_xl(**tfm_args)
 
     self.input_mask = input_mask
     self.initializer = initializer
