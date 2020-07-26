@@ -293,7 +293,7 @@ def get_qa_outputs(FLAGS, features, is_training):
         xlnet_config.d_model,
         activation=tf.tanh,
         kernel_initializer=initializer, name="dense_0")
-    ans_feature = tf.layers.dropout(ans_feature, FLAGS.dropout,
+    ans_feature = tf.layers.dropout(ans_feature, 0.1,
                                     training=is_training)
     cls_logits = tf.layers.dense(
         ans_feature,
