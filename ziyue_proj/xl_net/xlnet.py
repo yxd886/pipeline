@@ -81,22 +81,14 @@ class XLNetConfig(object):
 def create_run_config(is_training, is_finetune, FLAGS):
   kwargs = dict(
       is_training=is_training,
-      use_tpu=FLAGS.use_tpu,
-      use_bfloat16=FLAGS.use_bfloat16,
-      dropout=FLAGS.dropout,
-      dropatt=FLAGS.dropatt,
-      init=FLAGS.init,
-      init_range=FLAGS.init_range,
-      init_std=FLAGS.init_std,
-      clamp_len=FLAGS.clamp_len)
-
-  if not is_finetune:
-    kwargs.update(dict(
-        mem_len=FLAGS.mem_len,
-        reuse_len=FLAGS.reuse_len,
-        bi_data=FLAGS.bi_data,
-        clamp_len=FLAGS.clamp_len,
-        same_length=FLAGS.same_length))
+      use_tpu=False,
+      use_bfloat16=False,
+      dropout=0.1,
+      dropatt=0.1,
+      init="normal",
+      init_range=0.1,
+      init_std=0.02,
+      clamp_len=-1)
 
   return RunConfig(**kwargs)
 
