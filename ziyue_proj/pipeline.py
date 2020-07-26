@@ -17,7 +17,7 @@ sys.path.append('./vgg_19/')
 sys.path.append('./resnet/')
 sys.path.append('./inception_v3/')
 sys.path.append('./transformer/')
-sys.path.append('./xlnet/')
+sys.path.append('./xl_net/')
 import multiprocessing as mp
 
 
@@ -50,8 +50,8 @@ def model_fn(batch_size,model_name):
                 features["end_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
             loss,layer_outputs, layer_scopes= model(features)
             return loss, [features["input_ids"]] + layer_outputs, ["input"] + layer_scopes
-    elif model_name =="xlnet":
-        from xlnet.run_squad import get_model_fn
+    elif model_name =="xl_net":
+        from xl_net.run_squad import get_model_fn
         model = get_model_fn()
         features = {}
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
