@@ -1023,7 +1023,7 @@ def get_model_fn():
     is_training = True
 
     #### Get loss from inputs
-    results,outputs,scopes = function_builder.get_qa_outputs(FLAGS, features, is_training)
+    results,outputs,scopes = xlnet_function_builder.get_qa_outputs(FLAGS, features, is_training)
     with tf.variable_scope("loss"):
       #### Check model parameters
       num_params = sum([np.prod(v.shape) for v in tf.trainable_variables()])
