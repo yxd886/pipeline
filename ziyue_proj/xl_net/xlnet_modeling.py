@@ -538,6 +538,8 @@ def transformer_xl(inp_k, n_token, n_layer, d_model, n_head,
       output_h = tf.layers.dropout(word_emb_k, dropout, training=is_training)
       if inp_q is not None:
         output_g = tf.layers.dropout(word_emb_q, dropout, training=is_training)
+      outputs.append(output_h)
+      scopes.append(tf.get_variable_scope().name)
     with tf.variable_scope("seg_embeddings"):
       ##### Segment embedding
       if seg_id is not None:
