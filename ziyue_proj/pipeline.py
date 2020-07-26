@@ -49,7 +49,19 @@ def model_fn(batch_size,model_name):
                 features["end_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
             loss,layer_outputs, layer_scopes= model(features)
             return loss, [features["input_ids"]] + layer_outputs, ["input"] + layer_scopes
-
+    elif model_name =="xlnet":
+        from xlnet.run_squad import get_model_fn
+        model = get_model_fn()
+        features = {}
+        with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
+            features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 384)), tf.int32)
+            features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 384)), tf.int32)
+            features["segment_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 384)), tf.int32)
+            features["start_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
+            features["end_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
+            features["cls_index"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
+        loss,layer_outputs, layer_scopes= model(features)
+        return loss, [features["input_ids"]] + layer_outputs, ["input"] + layer_scopes
     elif model_name=="vgg_19":
         import vgg
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
