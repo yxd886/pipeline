@@ -269,7 +269,7 @@ def get_qa_outputs(FLAGS, features, is_training):
           kernel_initializer=initializer,
           name="dense_1")
       end_logits = tf.transpose(tf.squeeze(end_logits, -1), [1, 0])
-      end_log_probs = tf.nn.log_softmax(end_logits_masked, -1)
+      end_log_probs = tf.nn.log_softmax(end_logits, -1)
 
       return_dict["start_log_probs"] = start_log_probs
       return_dict["end_log_probs"] = end_log_probs
