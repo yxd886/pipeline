@@ -14,7 +14,8 @@ from tensorflow.python.ops import collective_ops
 sys.path.append('../')
 sys.path.append('./bert/')
 sys.path.append('./vgg_19/')
-sys.path.append('./resnet/')
+sys.path.append('./resnet152/')
+sys.path.append('./resnet50/')
 sys.path.append('./inception_v3/')
 sys.path.append('./transformer/')
 sys.path.append('./xl_net/')
@@ -73,12 +74,20 @@ def model_fn(batch_size,model_name):
 
         return loss, [x] + endpoints, ["input"] + scopes
 
-    elif model_name=="resnet":
-        import resnet_v2
+    elif model_name=="resnet152":
+        import resnet152_v2
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
             x = tf.placeholder(tf.float32, shape=(batch_size, 224, 224, 3))
             y = tf.placeholder(tf.float32, shape=(batch_size,1,1,1000))
-        loss, endpoints,scopes = resnet_v2.resnet_v2_152(x,y, 1000)
+        loss, endpoints,scopes = resnet152_v2.resnet_v2_152(x,y, 1000)
+        return loss, [x] + endpoints, ["input"] + scopes
+
+    elif model_name=="resnet50":
+        import resnet50_v2
+        with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
+            x = tf.placeholder(tf.float32, shape=(batch_size, 224, 224, 3))
+            y = tf.placeholder(tf.float32, shape=(batch_size,1,1,1000))
+        loss, endpoints,scopes = resnet50_v2.resnet_v2_50(x,y, 1000)
         return loss, [x] + endpoints, ["input"] + scopes
     elif model_name=="inception_v3":
         import inception_v3

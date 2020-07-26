@@ -14,7 +14,7 @@ from tensorflow.python.ops import collective_ops
 sys.path.append('../')
 sys.path.append('./bert/')
 sys.path.append('./vgg_19/')
-sys.path.append('./resnet/')
+sys.path.append('./resnet152/')
 sys.path.append('./inception_v3/')
 
 import multiprocessing as mp
@@ -59,7 +59,7 @@ def model_fn(batch_size,model_name):
 
         return loss, [x] + endpoints, ["input"] + scopes
 
-    elif model_name=="resnet":
+    elif model_name=="resnet152":
         import resnet_v2
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
             x = tf.placeholder(tf.float32, shape=(batch_size, 224, 224, 3))

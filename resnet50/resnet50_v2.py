@@ -53,9 +53,9 @@ from __future__ import print_function
 import tensorflow.compat.v1 as tf
 import tf_slim as slim
 
-import resnet_utils
+import resnet152_utils
 
-resnet_arg_scope = resnet_utils.resnet_arg_scope
+resnet_arg_scope = resnet152_utils.resnet_arg_scope
 
 
 @slim.add_arg_scope
@@ -87,7 +87,7 @@ def bottleneck(inputs, depth, depth_bottleneck, stride, rate=1,
     depth_in = slim.utils.last_dimension(inputs.get_shape(), min_rank=4)
     preact = slim.batch_norm(inputs, activation_fn=tf.nn.relu, scope='preact')
     if depth == depth_in:
-      shortcut = resnet_utils.subsample(inputs, stride, 'shortcut')
+      shortcut = resnet152_utils.subsample(inputs, stride, 'shortcut')
     else:
       shortcut = slim.conv2d(preact, depth, [1, 1], stride=stride,
                              normalizer_fn=None, activation_fn=None,
@@ -95,7 +95,7 @@ def bottleneck(inputs, depth, depth_bottleneck, stride, rate=1,
 
     residual = slim.conv2d(preact, depth_bottleneck, [1, 1], stride=1,
                            scope='conv1')
-    residual = resnet_utils.conv2d_same(residual, depth_bottleneck, 3, stride,
+    residual = resnet152_utils.conv2d_same(residual, depth_bottleneck, 3, stride,
                                         rate=rate, scope='conv2')
     residual = slim.conv2d(residual, depth, [1, 1], stride=1,
                            normalizer_fn=None, activation_fn=None,
@@ -185,7 +185,7 @@ def resnet_v2(inputs,
     if True:
       if True:
         net = inputs
-        net,outputs,scopes= resnet_utils.stack_blocks_dense(net, blocks, output_stride)
+        net,outputs,scopes= resnet152_utils.stack_blocks_dense(net, blocks, output_stride)
         # This is needed because the pre-activation variant does not have batch
         # normalization or activation functions in the residual unit output. See
         # Appendix of [2].
@@ -220,7 +220,7 @@ def resnet_v2_block(scope, base_depth, num_units, stride):
   Returns:
     A resnet_v2 bottleneck block.
   """
-  return resnet_utils.Block(scope, bottleneck, [{
+  return resnet152_utils.Block(scope, bottleneck, [{
       'depth': base_depth * 4,
       'depth_bottleneck': base_depth,
       'stride': 1
@@ -260,3 +260,29 @@ def resnet_v2_152(inputs,
   return loss,outputs,scopes
 resnet_v2_152.default_image_size = resnet_v2.default_image_size
 
+def resnet_v2_50(inputs,
+                 y,
+                 num_classes=None,
+                 is_training=True,
+                 global_pool=True,
+                 output_stride=None,
+                 spatial_squeeze=True,
+                 reuse=None,
+                 scope='resnet_v2_50'):
+  """ResNet-50 model of [1]. See resnet_v2() for arg and return description."""
+  blocks = [
+      resnet_v2_block('block1', base_depth=64, num_units=3, stride=2),
+      resnet_v2_block('block2', base_depth=128, num_units=4, stride=2),
+      resnet_v2_block('block3', base_depth=256, num_units=6, stride=2),
+      resnet_v2_block('block4', base_depth=512, num_units=3, stride=1),
+  ]
+  net, outputs, scopes =resnet_v2(inputs, blocks, num_classes, is_training=is_training,
+            global_pool=global_pool, output_stride=output_stride,
+            include_root_block=True, spatial_squeeze=spatial_squeeze,
+            reuse=reuse, scope=scope)
+  with tf.variable_scope(scopes[-1]):
+    loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=y, logits=net)
+    loss = tf.reduce_sum(loss)
+    outputs[-1]=loss
+  return loss,outputs,scopes
+resnet_v2_50.default_image_size = resnet_v2.default_image_size
