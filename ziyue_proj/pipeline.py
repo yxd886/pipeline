@@ -61,7 +61,7 @@ def model_fn(batch_size,model_name):
             features["start_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
             features["end_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
             features["cls_index"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
-            features["is_impossible"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
+            features["is_impossible"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.float32)
         loss,layer_outputs, layer_scopes= model(features)
         return loss, [features["input_ids"]] + layer_outputs, ["input"] + layer_scopes
     elif model_name=="vgg_19":
