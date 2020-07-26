@@ -17,6 +17,7 @@ sys.path.append('./vgg_19/')
 sys.path.append('./resnet/')
 sys.path.append('./inception_v3/')
 sys.path.append('./transformer/')
+sys.path.append('./xlnet/')
 import multiprocessing as mp
 
 
