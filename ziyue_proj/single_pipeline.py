@@ -232,7 +232,7 @@ class Activater():
             fo.write(pbtf.MessageToString(g))
 
     def activate_unit(self):
-        for i in range(1,7,1):a
+        for i in range(1,len(four_strategies)+1,1):
             self.build_model()
             self.change_model(i,four_strategies[i-1])
 if __name__ == '__main__':
@@ -254,10 +254,9 @@ if __name__ == '__main__':
     strategy_4 =  config_dict.get("strategy_4",[[0,16],[0,1]])
     pipedream = config_dict.get("pipedream", strategy_1)
     hetpipe =config_dict.get("hetpipe",strategy_1)
+    gpipe =config_dict.get("gpipe",strategy_1)
 
-    four_strategies = [strategy_1,strategy_2,strategy_3,strategy_4,pipedream,hetpipe]
-
-    four_strategies = [strategy_1,strategy_2,strategy_3,strategy_4,hetpipe]
+    four_strategies = [strategy_1,strategy_2,strategy_3,strategy_4,pipedream,hetpipe,gpipe]
 
     act = Activater(micro_batch_num = micro_batch_num,batch_size=batch_size,model_name =model_name)
     act.activate_unit()
