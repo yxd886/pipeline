@@ -232,7 +232,7 @@ class Activater():
             fo.write(pbtf.MessageToString(g))
 
     def activate_unit(self):
-        for i in range(1,7,1):
+        for i in range(1,7,1):a
             self.build_model()
             self.change_model(i,four_strategies[i-1])
 if __name__ == '__main__':

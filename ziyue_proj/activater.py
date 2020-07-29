@@ -152,3 +152,4 @@ os.environ["TF_CONFIG"] = json.dumps(clus)
 
 act = Activater(activate_graphs,sinks=sinks)
 act.activate()
+a = input("enter to exit")
