@@ -69,7 +69,7 @@ class Activater():
         pbtf.Parse(txt, config)
         #server = tf.distribute.Server(cluster, job_name='worker', task_index=0, protocol="grpc+verbs",
          #                                  config=config)
-        #target = None
+        target = None
 
         tf.import_graph_def(graph_def)
         print("import success")
