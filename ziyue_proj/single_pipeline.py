@@ -16,7 +16,10 @@ sys.path.append('./bert/')
 sys.path.append('./vgg_19/')
 sys.path.append('./resnet152/')
 sys.path.append('./inception_v3/')
-
+sys.path.append('./resnet152/')
+sys.path.append('./resnet50/')
+sys.path.append('./transformer/')
+sys.path.append('./xl_net/')
 import multiprocessing as mp
 
 
@@ -59,12 +62,28 @@ def model_fn(batch_size,model_name):
 
         return loss, [x] + endpoints, ["input"] + scopes
 
-    elif model_name=="resnet152":
-        import resnet_v2
+    elif model_name == "resnet152":
+        import resnet152_v2
+
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
             x = tf.placeholder(tf.float32, shape=(batch_size, 224, 224, 3))
-            y = tf.placeholder(tf.float32, shape=(batch_size,1,1,1000))
-        loss, endpoints,scopes = resnet_v2.resnet_v2_152(x,y, 1000)
+
+            y = tf.placeholder(tf.float32, shape=(batch_size, 1, 1, 1000))
+
+        loss, endpoints, scopes = resnet152_v2.resnet_v2_152(x, y, 1000)
+
+        return loss, [x] + endpoints, ["input"] + scopes
+
+    elif model_name == "resnet50":
+        import resnet50_v2
+
+        with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
+            x = tf.placeholder(tf.float32, shape=(batch_size, 224, 224, 3))
+
+            y = tf.placeholder(tf.float32, shape=(batch_size, 1, 1, 1000))
+
+        loss, endpoints, scopes = resnet50_v2.resnet_v2_50(x, y, 1000)
+
         return loss, [x] + endpoints, ["input"] + scopes
     elif model_name=="inception_v3":
         import inception_v3
@@ -75,7 +94,28 @@ def model_fn(batch_size,model_name):
         loss,endpoints, scopes = inception_v3.inception_v3(x,y,1000)
         return loss, [x] + endpoints, ["input"] + scopes
 
-
+    elif model_name=="transformer":
+        import transformer
+        with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
+            x = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 100)), tf.int32)
+            decode_input = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 100)), tf.int32)
+            y = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,100)), tf.int32)
+        loss, endpoints,scopes = transformer.Transformer().train(x,decode_input, y)
+        return loss, [x] + endpoints, ["input"] + scopes
+    elif model_name =="xl_net":
+        import xl_net.run_squad as rsq
+        model = rsq.get_model_fn()
+        features = {}
+        with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
+            features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 384)), tf.int32)
+            features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 384)), tf.float32)
+            features["segment_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 384)), tf.int32)
+            features["start_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
+            features["end_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
+            features["cls_index"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
+            features["is_impossible"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.float32)
+        loss,layer_outputs, layer_scopes= model(features)
+        return loss, [features["input_ids"]] + layer_outputs, ["input"] + layer_scopes
 
 class Activater():
     def __init__(self,micro_batch_num,batch_size,model_name):
