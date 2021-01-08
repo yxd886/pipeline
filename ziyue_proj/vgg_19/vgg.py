@@ -180,9 +180,8 @@ def vgg_19(inputs,
                           normalizer_fn=None,
                           scope='fc11')
 
-
-
       with tf.variable_scope("fc11"):
+        net = tf.squeeze(net, [1, 2], name="squzzezd")
         loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=y, logits=net)
         loss = tf.reduce_sum(loss)
       scopes.append('fc11')

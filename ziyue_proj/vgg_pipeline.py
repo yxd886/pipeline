@@ -56,9 +56,9 @@ def model_fn(batch_size,model_name):
     elif model_name=="vgg_19":
         import vgg
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
-            x = tf.placeholder(tf.float32, shape=(batch_size, 224, 224, 3))
-            y = tf.placeholder(tf.float32, shape=(batch_size,1,1,1000))
-        loss, endpoints,scopes = vgg.vgg_19(x,y, 1000)
+            x = tf.placeholder(tf.float32, shape=(None, 224, 224, 3))
+            y = tf.placeholder(tf.float32, shape=(None,1001))
+        loss, endpoints,scopes = vgg.vgg_19(x,y, 1001)
 
         return loss, [x] + endpoints, ["input"] + scopes
 
@@ -264,7 +264,7 @@ class Activater():
 
         g = (tge.TGE(self.gdef, self.devices, ["GradientDescent"])
              .custom(strategy)
-             .replace_placeholder(self.batch_size)
+             #.replace_placeholder(self.batch_size)
              .use_collective()
              .compile()
              .get_result()
@@ -278,17 +278,17 @@ class Activater():
             self.change_model(i,four_strategies[i-1])
 if __name__ == '__main__':
     config_dict =dict()
-    if os.path.exists("single_config.json"):
-        with open("single_config.json", "r") as f:
+    if os.path.exists("vgg_config.json"):
+        with open("vgg_config.json", "r") as f:
             config_dict = json.load(f)
     devices = config_dict.get("devices", [""])
 
-    model_name = config_dict.get("model_name", "bert")
+    model_name = config_dict.get("model_name", "vgg")
 
 
 
-    micro_batch_num =  config_dict.get("micro_batch_num",16)
-    batch_size =  config_dict.get("batch_size",6)
+    micro_batch_num =  config_dict.get("micro_batch_num",8)
+    batch_size =  config_dict.get("batch_size",32)
     strategy_1 =  config_dict.get("strategy_1",[[0,16],[0,1]])
     strategy_2 =  config_dict.get("strategy_2",[[0,16],[0,1]])
     strategy_3 =  config_dict.get("strategy_3",[[0,16],[0,1]])
