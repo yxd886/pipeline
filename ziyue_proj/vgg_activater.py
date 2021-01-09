@@ -192,9 +192,8 @@ class Activater():
 
 
         times= []
-        for j in range(10):
+        for j in range(100000000000000):
             tmp = time.time()
-
             #for i in range(len(xs)):
                 #x,y  =batch_queue.dequeue()
                 #x, y = sess.run([x,y])

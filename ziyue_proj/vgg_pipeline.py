@@ -181,7 +181,7 @@ class Activater():
             outputs.append(output[-1])
         self.scopes = scopes
         with tf.variable_scope(self.scopes[-1]):
-            new_loss =tf.add_n(losses)
+            new_loss =tf.add_n(losses,name="final_loss")
             new_outputs = tf.add_n(outputs)
         #self.train_op = tf.train.AdamOptimizer(learning_rate=0.2, beta1=0.9, beta2=0.98, epsilon=1e-9).minimize(new_loss)
         self.train_op = tf.train.GradientDescentOptimizer(learning_rate=0.2).minimize(new_loss)
