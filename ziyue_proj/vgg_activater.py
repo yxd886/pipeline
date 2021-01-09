@@ -43,6 +43,11 @@ model_name = config_dict.get("model_name", "bert")
 global_batch_size = batch_size*micro_batch_num
 
 
+def get_tensors(graph,name):
+    ret = []
+    for tensor in graph.get_tensors():
+        if name in tensor and "gradient" not in tensor:
+            ret.append(tensor)
 
 def replace_input(graph,x,name):
     for op in graph.get_operations():
@@ -192,18 +197,19 @@ class Activater():
 
 
         times= []
+        losses = get_tensors(graph, "final_loss")
+        losses = tf.reduce_mean(tf.add_n(losses)/len(losses))
+        accurate_num = get_tensors(graph,"accurate_num")
+        accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
         for j in range(100000000000000):
-            tmp = time.time()
-            #for i in range(len(xs)):
-                #x,y  =batch_queue.dequeue()
-                #x, y = sess.run([x,y])
-                #input_dict[xs[i]] = x
-                #input_dict[ys[i]] = y
-                #input_dict[xs[i]] = np.random.rand(32,224,224,3)
-                #input_dict[ys[i]] = np.random.rand(32.1001)
+            if j % 10 == 0:
+                ret = sess.run(opt+[losses,accurate_num], feed_dict=input_dict)
+                print("Step:{},Loss:{},top5 accuracy:{}".format(j,ret[-2],ret[-1]/(micro_batch_num*batch_size)))
+            else:
+                sess.run(opt, feed_dict=input_dict)
 
-            sess.run(opt, feed_dict=input_dict)
-            times.append(time.time()-tmp)
+
+
         avg_time = sum(times)/len(times)
         print(path,times,"average time:", avg_time)
         print(" ")
