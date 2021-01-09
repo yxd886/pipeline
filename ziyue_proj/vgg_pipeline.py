@@ -11,6 +11,9 @@ import sys
 from tensorflow.python.client import timeline
 from tensorflow.distribute.cluster_resolver import TFConfigClusterResolver
 from tensorflow.python.ops import collective_ops
+from datasets import dataset_factory
+from preprocessing import preprocessing_factory
+import tf_slim as slim
 sys.path.append('../')
 sys.path.append('./bert/')
 sys.path.append('./vgg_19/')
@@ -36,86 +39,19 @@ def setup_workers(workers, protocol="grpc"):
     time.sleep(1)
 
 
-def model_fn(batch_size,model_name):
-    if model_name=="bert":
-        from bert.runsquad import new_model_fn_builder
-        import modeling
-        bert_config = modeling.BertConfig.from_json_file("bert/bert_large/bert_config.json")
-        model = new_model_fn_builder(bert_config)
-        features = {}
-        if True:
-            with tf.variable_scope("input",reuse=tf.AUTO_REUSE):
-                features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 384)), tf.int32)
-                features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 384)), tf.int32)
-                features["segment_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 384)), tf.int32)
-                features["start_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
-                features["end_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
-            loss,layer_outputs, layer_scopes= model(features)
-            return loss, [features["input_ids"]] + layer_outputs, ["input"] + layer_scopes
+def model_fn(batch_queue,model_name):
 
-    elif model_name=="vgg_19":
+    if model_name=="vgg_19":
         import vgg
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
-            x = tf.placeholder(tf.float32, shape=(None, 224, 224, 3))
-            y = tf.placeholder(tf.float32, shape=(None,1001))
+            #x = tf.placeholder(tf.float32, shape=(None, 224, 224, 3))
+            #y = tf.placeholder(tf.float32, shape=(None,1001))
+            x,y = batch_queue.dequeue()
         loss, endpoints,scopes = vgg.vgg_19(x,y, 1001)
 
         return loss, [x] + endpoints, ["input"] + scopes
 
-    elif model_name == "resnet152":
-        import resnet152_v2
 
-        with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
-            x = tf.placeholder(tf.float32, shape=(batch_size, 224, 224, 3))
-
-            y = tf.placeholder(tf.float32, shape=(batch_size, 1, 1, 1000))
-
-        loss, endpoints, scopes = resnet152_v2.resnet_v2_152(x, y, 1000)
-
-        return loss, [x] + endpoints, ["input"] + scopes
-
-    elif model_name == "resnet50":
-        import resnet50_v2
-
-        with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
-            x = tf.placeholder(tf.float32, shape=(batch_size, 224, 224, 3))
-
-            y = tf.placeholder(tf.float32, shape=(batch_size, 1, 1, 1000))
-
-        loss, endpoints, scopes = resnet50_v2.resnet_v2_50(x, y, 1000)
-
-        return loss, [x] + endpoints, ["input"] + scopes
-    elif model_name=="inception_v3":
-        import inception_v3
-        with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
-
-            x = tf.placeholder(tf.float32, shape=(batch_size, 224, 224, 3))
-            y = tf.placeholder(tf.float32, shape=(batch_size, 1000))
-        loss,endpoints, scopes = inception_v3.inception_v3(x,y,1000)
-        return loss, [x] + endpoints, ["input"] + scopes
-
-    elif model_name=="transformer":
-        import transformer
-        with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
-            x = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 100)), tf.int32)
-            decode_input = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 100)), tf.int32)
-            y = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,100)), tf.int32)
-        loss, endpoints,scopes = transformer.Transformer().train(x,decode_input, y)
-        return loss, [x] + endpoints, ["input"] + scopes
-    elif model_name =="xl_net":
-        import xl_net.run_squad as rsq
-        model = rsq.get_model_fn()
-        features = {}
-        with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
-            features["input_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 384)), tf.int32)
-            features["input_mask"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 384)), tf.float32)
-            features["segment_ids"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size, 384)), tf.int32)
-            features["start_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
-            features["end_positions"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
-            features["cls_index"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.int32)
-            features["is_impossible"] = tf.cast(100 * tf.placeholder(tf.float32, shape=(batch_size,)), tf.float32)
-        loss,layer_outputs, layer_scopes= model(features)
-        return loss, [features["input_ids"]] + layer_outputs, ["input"] + layer_scopes
 
 class Activater():
     def __init__(self,micro_batch_num,batch_size,model_name):
@@ -204,9 +140,41 @@ class Activater():
             return _setter.choose
         losses = []
         outputs = []
+        dataset = dataset_factory.get_dataset(
+            "imagenet", "train", "/data/slim_imagenet")
+
+        preprocessing_name = "vgg_19"
+        image_preprocessing_fn = preprocessing_factory.get_preprocessing(
+            preprocessing_name,
+            is_training=True)
+
+        with tf.device("gpu:0"):
+            provider = slim.dataset_data_provider.DatasetDataProvider(
+                dataset,
+                num_readers=4,
+                common_queue_capacity=20 * batch_size,
+                common_queue_min=10 * batch_size)
+            [image, label] = provider.get(['image', 'label'])
+
+            train_image_size = 224
+
+            image = image_preprocessing_fn(image, train_image_size, train_image_size)
+            print("image shape:", image.shape)
+            print("label shape:", label.shape)
+            images, labels = tf.train.batch(
+                [image, label],
+                batch_size=batch_size,
+                num_threads=4,
+                capacity=5 * batch_size)
+            labels = slim.one_hot_encoding(
+                labels, dataset.num_classes)
+            batch_queue = slim.prefetch_queue.prefetch_queue(
+                [images, labels], capacity=2 * micro_batch_num)
+
+
         tf.get_variable_scope()._reuse =tf.AUTO_REUSE
         for i in range(self.micro_batch_num):
-            loss, output, scopes = self.model_fn(None,self.model_name)
+            loss, output, scopes = self.model_fn(batch_queue,self.model_name)
             losses.append(loss)
             outputs.append(output[-1])
         self.scopes = scopes
