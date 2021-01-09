@@ -102,6 +102,7 @@ class Activater():
 
         train_image_size = 224
 
+
         image = image_preprocessing_fn(image, train_image_size, train_image_size)
         print("image shape:", image.shape)
         print("label shape:", label.shape)
