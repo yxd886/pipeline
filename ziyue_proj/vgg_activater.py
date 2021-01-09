@@ -47,7 +47,7 @@ def get_tensors(graph,name):
     ret = []
     for op in graph.get_operations():
         for tensor in op.outputs:
-            if name in tensor and "gradient" not in tensor:
+            if name in tensor.name and "gradient" not in tensor.name:
                 ret.append(tensor)
 
 def replace_input(graph,x,name):
