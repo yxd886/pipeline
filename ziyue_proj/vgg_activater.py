@@ -45,9 +45,10 @@ global_batch_size = batch_size*micro_batch_num
 
 def get_tensors(graph,name):
     ret = []
-    for tensor in graph.get_tensors():
-        if name in tensor and "gradient" not in tensor:
-            ret.append(tensor)
+    for op in graph.get_operations():
+        for tensor in op.outputs:
+            if name in tensor and "gradient" not in tensor:
+                ret.append(tensor)
 
 def replace_input(graph,x,name):
     for op in graph.get_operations():
