@@ -47,7 +47,7 @@ global_batch_size = batch_size*micro_batch_num
 def replace_input(graph,x,name):
     for op in graph.get_operations():
         for i,input in enumerate(op.inputs()):
-            if input==name:
+            if input.name==name:
                 op._update_input(i,x)
 
 
