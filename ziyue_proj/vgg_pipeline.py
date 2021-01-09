@@ -44,9 +44,9 @@ def model_fn(batch_queue,model_name):
     if model_name=="vgg_19":
         import vgg
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
-            #x = tf.placeholder(tf.float32, shape=(None, 224, 224, 3))
-            #y = tf.placeholder(tf.float32, shape=(None,1001))
-            x,y = batch_queue.dequeue()
+            x = tf.placeholder(tf.float32, shape=(None, 224, 224, 3))
+            y = tf.placeholder(tf.float32, shape=(None,1001))
+            #x,y = batch_queue.dequeue()
         loss, endpoints,scopes = vgg.vgg_19(x,y, 1001)
 
         return loss, [x] + endpoints, ["input"] + scopes
@@ -140,7 +140,7 @@ class Activater():
             return _setter.choose
         losses = []
         outputs = []
-
+        '''
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
 
             dataset = dataset_factory.get_dataset(
@@ -173,10 +173,10 @@ class Activater():
             batch_queue = slim.prefetch_queue.prefetch_queue(
                 [images, labels], capacity=2 * micro_batch_num)
 
-
+        '''
         tf.get_variable_scope()._reuse =tf.AUTO_REUSE
         for i in range(self.micro_batch_num):
-            loss, output, scopes = self.model_fn(batch_queue,self.model_name)
+            loss, output, scopes = self.model_fn(None,self.model_name)
             losses.append(loss)
             outputs.append(output[-1])
         self.scopes = scopes

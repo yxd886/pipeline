@@ -42,6 +42,15 @@ batch_size = config_dict.get("batch_size", 32)
 model_name = config_dict.get("model_name", "bert")
 global_batch_size = batch_size*micro_batch_num
 
+
+
+def replace_input(graph,x,name):
+    for op in graph.get_operations():
+        for i,input in enumerate(op.inputs()):
+            if input==name:
+                op._update_input(i,x)
+
+
 class Activater():
     def __init__(self, activate_path, sinks=["Adam"]):
         self.graph_defs = []
@@ -85,7 +94,7 @@ class Activater():
         graph = tf.get_default_graph()
         init = graph.get_operation_by_name("import/init/replica_0")
         print("11111111111111111111111")
-        '''
+
         dataset = dataset_factory.get_dataset(
             "imagenet", "train", "/data/slim_imagenet")
 
@@ -116,7 +125,7 @@ class Activater():
             labels, dataset.num_classes)
         batch_queue = slim.prefetch_queue.prefetch_queue(
             [images, labels], capacity=2 * micro_batch_num)
-        '''
+
         sess = tf.Session(target, config=config)  # , config=tf.ConfigProto(allow_soft_placement=False))
         print("222222222222222222222222")
 
@@ -134,7 +143,7 @@ class Activater():
         '''
         #prepare input
 
-        '''
+
         x0 = graph.get_tensor_by_name("import/input/Placeholder/replica_0:0")
         x1 = graph.get_tensor_by_name("import/input_1/Placeholder/replica_0:0")
         x2 = graph.get_tensor_by_name("import/input_2/Placeholder/replica_0:0")
@@ -154,7 +163,12 @@ class Activater():
 
         xs = [x0,x1,x2,x3,x4,x5,x6,x7]
         ys = [y0,y1,y2,y3,y4,y5,y6,y7]
-        '''
+
+        for i in range(len(xs)):
+            x, y = batch_queue.dequeue()
+            replace_input(graph,x,xs[i].name)
+            replace_input(graph,y,ys[i].name)
+
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
         opt = []
