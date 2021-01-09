@@ -184,18 +184,6 @@ class Activater():
         # opt = [graph.get_operation_by_name('import/' + x) for x in self.sinks]
         print("444444444444444444444")
 
-        for j in range(10):  # warm up
-
-            #for i in range(len(xs)):
-                #x,y  =batch_queue.dequeue()
-                #x, y = sess.run([x,y])
-                #input_dict[xs[i]] = x
-                #input_dict[ys[i]] = y
-                #input_dict[xs[i]] = np.random.rand(32,224,224,3)
-                #input_dict[ys[i]] = np.random.rand(32.1001)
-
-            sess.run(opt, feed_dict=input_dict)
-
 
         times= []
         losses = get_tensors(graph, "final_loss")
