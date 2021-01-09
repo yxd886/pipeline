@@ -92,7 +92,7 @@ class Activater():
         sess.run(init)
         print("333333333333333333333")
 
-        input_dict = {}
+        input_dict = None
         '''
         placeholders = [node.outputs[0] for node in graph.get_operations() if node.node_def.op == 'Placeholder']
         shapes = [(p.shape.as_list()) for p in placeholders ]
@@ -169,8 +169,9 @@ class Activater():
                 x,y  =batch_queue.dequeue()
                 input_dict[xs[i]] = x
                 input_dict[ys[i]] = y
-            sess.run(opt, feed_dict=input_dict)
             '''
+            sess.run(opt, feed_dict=input_dict)
+
 
         times= []
         for j in range(10):
