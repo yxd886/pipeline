@@ -190,7 +190,7 @@ class Activater():
             f.write("global start time: {}\n".format(global_start_time))
         times= []
         losses = get_tensors(graph, "final_loss")
-        losses = tf.reduce_mean(tf.add_n(losses)/len(losses))
+        losses = tf.add_n(losses)/len(losses)
         accurate_num = get_tensors(graph,"accurate_num")
         accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
         for j in range(100000000000000):
