@@ -91,6 +91,8 @@ class Activater():
 
         sess.run(init)
         print("333333333333333333333")
+        coord = tf.train.Coordinator()
+        threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
         input_dict = {}
         '''
@@ -165,12 +167,12 @@ class Activater():
         for j in range(10):  # warm up
 
             for i in range(len(xs)):
-                #x,y  =batch_queue.dequeue()
-                #x, y = sess.run([x,y])
-                #input_dict[xs[i]] = x
-                #input_dict[ys[i]] = y
-                input_dict[xs[i]] = np.random.rand(32,224,224,3)
-                input_dict[ys[i]] = np.random.rand(32.1001)
+                x,y  =batch_queue.dequeue()
+                x, y = sess.run([x,y])
+                input_dict[xs[i]] = x
+                input_dict[ys[i]] = y
+                #input_dict[xs[i]] = np.random.rand(32,224,224,3)
+                #input_dict[ys[i]] = np.random.rand(32.1001)
 
             sess.run(opt, feed_dict=input_dict)
 
@@ -180,12 +182,12 @@ class Activater():
             tmp = time.time()
 
             for i in range(len(xs)):
-                #x,y  =batch_queue.dequeue()
-                #x, y = sess.run([x,y])
-                #input_dict[xs[i]] = x
-                #input_dict[ys[i]] = y
-                input_dict[xs[i]] = np.random.rand(32,224,224,3)
-                input_dict[ys[i]] = np.random.rand(32.1001)
+                x,y  =batch_queue.dequeue()
+                x, y = sess.run([x,y])
+                input_dict[xs[i]] = x
+                input_dict[ys[i]] = y
+                #input_dict[xs[i]] = np.random.rand(32,224,224,3)
+                #input_dict[ys[i]] = np.random.rand(32.1001)
 
             sess.run(opt, feed_dict=input_dict)
             times.append(time.time()-tmp)
