@@ -110,47 +110,46 @@ class Activater():
             preprocessing_name,
             is_training=True)
 
-        with tf.device("gpu:0"):
-            provider = slim.dataset_data_provider.DatasetDataProvider(
-                dataset,
-                num_readers=4,
-                common_queue_capacity=20 * batch_size,
-                common_queue_min=10 * batch_size)
-            [image, label] = provider.get(['image', 'label'])
+        provider = slim.dataset_data_provider.DatasetDataProvider(
+            dataset,
+            num_readers=4,
+            common_queue_capacity=20 * batch_size,
+            common_queue_min=10 * batch_size)
+        [image, label] = provider.get(['image', 'label'])
 
-            train_image_size = 224
+        train_image_size = 224
 
-            image = image_preprocessing_fn(image, train_image_size, train_image_size)
-            print("image shape:", image.shape)
-            print("label shape:", label.shape)
-            images, labels = tf.train.batch(
-                [image, label],
-                batch_size=batch_size,
-                num_threads=4,
-                capacity=5 * batch_size)
-            labels = slim.one_hot_encoding(
-                labels, dataset.num_classes)
-            batch_queue = slim.prefetch_queue.prefetch_queue(
-                [images, labels], capacity=2 * micro_batch_num)
-            x0 = graph.get_tensor_by_name("import/input/Placeholder/replica_0:0")
-            x1 = graph.get_tensor_by_name("import/input_1/Placeholder/replica_0:0")
-            x2 = graph.get_tensor_by_name("import/input_2/Placeholder/replica_0:0")
-            x3 = graph.get_tensor_by_name("import/input_3/Placeholder/replica_0:0")
-            x4 = graph.get_tensor_by_name("import/input_4/Placeholder/replica_0:0")
-            x5 = graph.get_tensor_by_name("import/input_5/Placeholder/replica_0:0")
-            x6 = graph.get_tensor_by_name("import/input_6/Placeholder/replica_0:0")
-            x7 = graph.get_tensor_by_name("import/input_7/Placeholder/replica_0:0")
-            y0 = graph.get_tensor_by_name("import/input/Placeholder_1/replica_0:0")
-            y1 = graph.get_tensor_by_name("import/input_1/Placeholder_1/replica_0:0")
-            y2 = graph.get_tensor_by_name("import/input_2/Placeholder_1/replica_0:0")
-            y3 = graph.get_tensor_by_name("import/input_3/Placeholder_1/replica_0:0")
-            y4 = graph.get_tensor_by_name("import/input_4/Placeholder_1/replica_0:0")
-            y5 = graph.get_tensor_by_name("import/input_5/Placeholder_1/replica_0:0")
-            y6 = graph.get_tensor_by_name("import/input_6/Placeholder_1/replica_0:0")
-            y7 = graph.get_tensor_by_name("import/input_7/Placeholder_1/replica_0:0")
+        image = image_preprocessing_fn(image, train_image_size, train_image_size)
+        print("image shape:", image.shape)
+        print("label shape:", label.shape)
+        images, labels = tf.train.batch(
+            [image, label],
+            batch_size=batch_size,
+            num_threads=4,
+            capacity=5 * batch_size)
+        labels = slim.one_hot_encoding(
+            labels, dataset.num_classes)
+        batch_queue = slim.prefetch_queue.prefetch_queue(
+            [images, labels], capacity=2 * micro_batch_num)
+        x0 = graph.get_tensor_by_name("import/input/Placeholder/replica_0:0")
+        x1 = graph.get_tensor_by_name("import/input_1/Placeholder/replica_0:0")
+        x2 = graph.get_tensor_by_name("import/input_2/Placeholder/replica_0:0")
+        x3 = graph.get_tensor_by_name("import/input_3/Placeholder/replica_0:0")
+        x4 = graph.get_tensor_by_name("import/input_4/Placeholder/replica_0:0")
+        x5 = graph.get_tensor_by_name("import/input_5/Placeholder/replica_0:0")
+        x6 = graph.get_tensor_by_name("import/input_6/Placeholder/replica_0:0")
+        x7 = graph.get_tensor_by_name("import/input_7/Placeholder/replica_0:0")
+        y0 = graph.get_tensor_by_name("import/input/Placeholder_1/replica_0:0")
+        y1 = graph.get_tensor_by_name("import/input_1/Placeholder_1/replica_0:0")
+        y2 = graph.get_tensor_by_name("import/input_2/Placeholder_1/replica_0:0")
+        y3 = graph.get_tensor_by_name("import/input_3/Placeholder_1/replica_0:0")
+        y4 = graph.get_tensor_by_name("import/input_4/Placeholder_1/replica_0:0")
+        y5 = graph.get_tensor_by_name("import/input_5/Placeholder_1/replica_0:0")
+        y6 = graph.get_tensor_by_name("import/input_6/Placeholder_1/replica_0:0")
+        y7 = graph.get_tensor_by_name("import/input_7/Placeholder_1/replica_0:0")
 
-            xs = [x0,x1,x2,x3,x4,x5,x6,x7]
-            ys = [y0,y1,y2,y3,y4,y5,y6,y7]
+        xs = [x0,x1,x2,x3,x4,x5,x6,x7]
+        ys = [y0,y1,y2,y3,y4,y5,y6,y7]
 
         opt = []
         for sink in self.sinks:
