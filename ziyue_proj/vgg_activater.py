@@ -93,13 +93,13 @@ class Activater():
         print("333333333333333333333")
 
         input_dict = {}
-
+        '''
         placeholders = [node.outputs[0] for node in graph.get_operations() if node.node_def.op == 'Placeholder']
         shapes = [(p.shape.as_list()) for p in placeholders ]
         for shape in shapes:
             shape[0]=batch_size
         input_dict = { p: np.random.rand(*shapes[i]) for i,p in enumerate(placeholders) }
-
+        '''
         #prepare input
 
         dataset = dataset_factory.get_dataset(
@@ -169,6 +169,8 @@ class Activater():
                 #x, y = sess.run([x,y])
                 #input_dict[xs[i]] = x
                 #input_dict[ys[i]] = y
+                input_dict[xs[i]] = np.random.rand(32,224,224,3)
+                input_dict[ys[i]] = np.random.rand(32.1001)
 
             sess.run(opt, feed_dict=input_dict)
 
@@ -182,6 +184,8 @@ class Activater():
                 #x, y = sess.run([x,y])
                 #input_dict[xs[i]] = x
                 #input_dict[ys[i]] = y
+                input_dict[xs[i]] = np.random.rand(32,224,224,3)
+                input_dict[ys[i]] = np.random.rand(32.1001)
 
             sess.run(opt, feed_dict=input_dict)
             times.append(time.time()-tmp)
