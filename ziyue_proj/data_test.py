@@ -35,8 +35,11 @@ labels = slim.one_hot_encoding(
 batch_queue = slim.prefetch_queue.prefetch_queue(
     [images, labels], capacity=2 * 8)
 image,label = batch_queue.dequeue()
-
+with open("test_graph.pbtxt", "w") as f:
+    f.write(str(tf.get_default_graph().as_graph_def(add_shapes=True)))
 with tf.Session() as sess:
+    coord = tf.train.Coordinator()
+    threads = tf.train.start_queue_runners(sess=sess, coord=coord)
     image,label = sess.run([image,label])
 print("aaaaaaaaaaaaaaaaaaaaaaaaaaa")
 print(image.shape)

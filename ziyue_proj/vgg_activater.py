@@ -134,7 +134,7 @@ class Activater():
         '''
         #prepare input
 
-
+        '''
         x0 = graph.get_tensor_by_name("import/input/Placeholder/replica_0:0")
         x1 = graph.get_tensor_by_name("import/input_1/Placeholder/replica_0:0")
         x2 = graph.get_tensor_by_name("import/input_2/Placeholder/replica_0:0")
@@ -154,6 +154,7 @@ class Activater():
 
         xs = [x0,x1,x2,x3,x4,x5,x6,x7]
         ys = [y0,y1,y2,y3,y4,y5,y6,y7]
+        '''
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
         opt = []
