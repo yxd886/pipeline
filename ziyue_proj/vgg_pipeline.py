@@ -151,28 +151,27 @@ class Activater():
                 preprocessing_name,
                 is_training=True)
 
-            with tf.device("gpu:0"):
-                provider = slim.dataset_data_provider.DatasetDataProvider(
-                    dataset,
-                    num_readers=4,
-                    common_queue_capacity=20 * batch_size,
-                    common_queue_min=10 * batch_size)
-                [image, label] = provider.get(['image', 'label'])
+            provider = slim.dataset_data_provider.DatasetDataProvider(
+                dataset,
+                num_readers=4,
+                common_queue_capacity=20 * batch_size,
+                common_queue_min=10 * batch_size)
+            [image, label] = provider.get(['image', 'label'])
 
-                train_image_size = 224
+            train_image_size = 224
 
-                image = image_preprocessing_fn(image, train_image_size, train_image_size)
-                print("image shape:", image.shape)
-                print("label shape:", label.shape)
-                images, labels = tf.train.batch(
-                    [image, label],
-                    batch_size=batch_size,
-                    num_threads=4,
-                    capacity=5 * batch_size)
-                labels = slim.one_hot_encoding(
-                    labels, dataset.num_classes)
-                batch_queue = slim.prefetch_queue.prefetch_queue(
-                    [images, labels], capacity=2 * micro_batch_num)
+            image = image_preprocessing_fn(image, train_image_size, train_image_size)
+            print("image shape:", image.shape)
+            print("label shape:", label.shape)
+            images, labels = tf.train.batch(
+                [image, label],
+                batch_size=batch_size,
+                num_threads=4,
+                capacity=5 * batch_size)
+            labels = slim.one_hot_encoding(
+                labels, dataset.num_classes)
+            batch_queue = slim.prefetch_queue.prefetch_queue(
+                [images, labels], capacity=2 * micro_batch_num)
 
 
         tf.get_variable_scope()._reuse =tf.AUTO_REUSE
