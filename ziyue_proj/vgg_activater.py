@@ -92,7 +92,7 @@ class Activater():
         sess.run(init)
         print("333333333333333333333")
 
-        input_dict = None
+        input_dict = {}
         '''
         placeholders = [node.outputs[0] for node in graph.get_operations() if node.node_def.op == 'Placeholder']
         shapes = [(p.shape.as_list()) for p in placeholders ]
