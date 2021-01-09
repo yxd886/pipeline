@@ -165,10 +165,12 @@ class Activater():
         for j in range(10):  # warm up
 
             for i in range(len(xs)):
-                x,y  =batch_queue.dequeue()
-                x, y = sess.run([x,y])
-                input_dict[xs[i]] = x
-                input_dict[ys[i]] = y
+                #x,y  =batch_queue.dequeue()
+                #x, y = sess.run([x,y])
+                #input_dict[xs[i]] = x
+                #input_dict[ys[i]] = y
+                input_dict[xs[i]] = np.random.rand(xs[i].shape.as_list())
+                input_dict[ys[i]] = np.random.rand(ys[i].shape.as_list())
 
             sess.run(opt, feed_dict=input_dict)
 
@@ -178,10 +180,12 @@ class Activater():
             tmp = time.time()
 
             for i in range(len(xs)):
-                x,y  =batch_queue.dequeue()
-                x, y = sess.run([x,y])
-                input_dict[xs[i]] = x
-                input_dict[ys[i]] = y
+                #x,y  =batch_queue.dequeue()
+                #x, y = sess.run([x,y])
+                #input_dict[xs[i]] = x
+                #input_dict[ys[i]] = y
+                input_dict[xs[i]] = np.random.rand(xs[i].shape.as_list())
+                input_dict[ys[i]] = np.random.rand(ys[i].shape.as_list())
 
             sess.run(opt, feed_dict=input_dict)
             times.append(time.time()-tmp)
