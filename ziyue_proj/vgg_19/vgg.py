@@ -182,7 +182,16 @@ def vgg_19(inputs,
 
       with tf.variable_scope("fc11"):
         net = tf.squeeze(net, [1, 2], name="squzzezd")
-        loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=y, logits=net)
+        _, indexs = tf.math.topk(net,5)
+
+        def fn(args):
+          y,index = args
+          return tf.gather(y,index)
+        acc_array = tf.vectorized_map(fn,(y,indexs))
+
+        accurate_num = tf.reduce_sum(acc_array,name="accurate_num")
+
+        loss = tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=net)
         loss = tf.reduce_sum(loss)
       scopes.append('fc11')
       outputs.append(loss)
