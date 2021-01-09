@@ -182,7 +182,7 @@ def vgg_19(inputs,
 
       with tf.variable_scope("fc11"):
         net = tf.squeeze(net, [1, 2], name="squzzezd")
-        _, indexs = tf.math.topk(net,5)
+        _, indexs = tf.math.top_k(net,5)
 
         def fn(args):
           y,index = args
