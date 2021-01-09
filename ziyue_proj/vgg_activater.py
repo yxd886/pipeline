@@ -85,6 +85,7 @@ class Activater():
         graph = tf.get_default_graph()
         init = graph.get_operation_by_name("import/init/replica_0")
         print("11111111111111111111111")
+        '''
         dataset = dataset_factory.get_dataset(
             "imagenet", "train", "/data/slim_imagenet")
 
@@ -115,6 +116,7 @@ class Activater():
             labels, dataset.num_classes)
         batch_queue = slim.prefetch_queue.prefetch_queue(
             [images, labels], capacity=2 * micro_batch_num)
+        '''
         sess = tf.Session(target, config=config)  # , config=tf.ConfigProto(allow_soft_placement=False))
         print("222222222222222222222222")
 
@@ -122,7 +124,7 @@ class Activater():
         print("333333333333333333333")
 
 
-        input_dict = {}
+        input_dict = None
         '''
         placeholders = [node.outputs[0] for node in graph.get_operations() if node.node_def.op == 'Placeholder']
         shapes = [(p.shape.as_list()) for p in placeholders ]
@@ -167,11 +169,11 @@ class Activater():
 
         for j in range(10):  # warm up
 
-            for i in range(len(xs)):
-                x,y  =batch_queue.dequeue()
-                x, y = sess.run([x,y])
-                input_dict[xs[i]] = x
-                input_dict[ys[i]] = y
+            #for i in range(len(xs)):
+                #x,y  =batch_queue.dequeue()
+                #x, y = sess.run([x,y])
+                #input_dict[xs[i]] = x
+                #input_dict[ys[i]] = y
                 #input_dict[xs[i]] = np.random.rand(32,224,224,3)
                 #input_dict[ys[i]] = np.random.rand(32.1001)
 
@@ -182,11 +184,11 @@ class Activater():
         for j in range(10):
             tmp = time.time()
 
-            for i in range(len(xs)):
-                x,y  =batch_queue.dequeue()
-                x, y = sess.run([x,y])
-                input_dict[xs[i]] = x
-                input_dict[ys[i]] = y
+            #for i in range(len(xs)):
+                #x,y  =batch_queue.dequeue()
+                #x, y = sess.run([x,y])
+                #input_dict[xs[i]] = x
+                #input_dict[ys[i]] = y
                 #input_dict[xs[i]] = np.random.rand(32,224,224,3)
                 #input_dict[ys[i]] = np.random.rand(32.1001)
 
