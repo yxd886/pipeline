@@ -85,25 +85,6 @@ class Activater():
         graph = tf.get_default_graph()
         init = graph.get_operation_by_name("import/init/replica_0")
         print("11111111111111111111111")
-
-        sess = tf.Session(target, config=config)  # , config=tf.ConfigProto(allow_soft_placement=False))
-        print("222222222222222222222222")
-
-        sess.run(init)
-        print("333333333333333333333")
-        coord = tf.train.Coordinator()
-        threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-
-        input_dict = {}
-        '''
-        placeholders = [node.outputs[0] for node in graph.get_operations() if node.node_def.op == 'Placeholder']
-        shapes = [(p.shape.as_list()) for p in placeholders ]
-        for shape in shapes:
-            shape[0]=batch_size
-        input_dict = { p: np.random.rand(*shapes[i]) for i,p in enumerate(placeholders) }
-        '''
-        #prepare input
-
         dataset = dataset_factory.get_dataset(
             "imagenet", "train", "/data/slim_imagenet")
 
@@ -133,6 +114,24 @@ class Activater():
             labels, dataset.num_classes)
         batch_queue = slim.prefetch_queue.prefetch_queue(
             [images, labels], capacity=2 * micro_batch_num)
+        sess = tf.Session(target, config=config)  # , config=tf.ConfigProto(allow_soft_placement=False))
+        print("222222222222222222222222")
+
+        sess.run(init)
+        print("333333333333333333333")
+
+
+        input_dict = {}
+        '''
+        placeholders = [node.outputs[0] for node in graph.get_operations() if node.node_def.op == 'Placeholder']
+        shapes = [(p.shape.as_list()) for p in placeholders ]
+        for shape in shapes:
+            shape[0]=batch_size
+        input_dict = { p: np.random.rand(*shapes[i]) for i,p in enumerate(placeholders) }
+        '''
+        #prepare input
+
+
         x0 = graph.get_tensor_by_name("import/input/Placeholder/replica_0:0")
         x1 = graph.get_tensor_by_name("import/input_1/Placeholder/replica_0:0")
         x2 = graph.get_tensor_by_name("import/input_2/Placeholder/replica_0:0")
@@ -152,7 +151,8 @@ class Activater():
 
         xs = [x0,x1,x2,x3,x4,x5,x6,x7]
         ys = [y0,y1,y2,y3,y4,y5,y6,y7]
-
+        coord = tf.train.Coordinator()
+        threads = tf.train.start_queue_runners(sess=sess, coord=coord)
         opt = []
         for sink in self.sinks:
             for i in range(10):
