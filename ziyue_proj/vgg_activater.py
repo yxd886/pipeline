@@ -92,7 +92,7 @@ class Activater():
         sess.run(init)
         print("333333333333333333333")
 
-        input_dict = None
+        input_dict = {}
         '''
         placeholders = [node.outputs[0] for node in graph.get_operations() if node.node_def.op == 'Placeholder']
         shapes = [(p.shape.as_list()) for p in placeholders ]
@@ -101,7 +101,7 @@ class Activater():
         input_dict = { p: np.random.rand(*shapes[i]) for i,p in enumerate(placeholders) }
         '''
         #prepare input
-        '''
+
         dataset = dataset_factory.get_dataset(
             "imagenet", "train", "/data/slim_imagenet")
 
@@ -151,7 +151,7 @@ class Activater():
 
             xs = [x0,x1,x2,x3,x4,x5,x6,x7]
             ys = [y0,y1,y2,y3,y4,y5,y6,y7]
-        '''
+
         opt = []
         for sink in self.sinks:
             for i in range(10):
@@ -164,24 +164,26 @@ class Activater():
         print("444444444444444444444")
 
         for j in range(10):  # warm up
-            '''
+
             for i in range(len(xs)):
                 x,y  =batch_queue.dequeue()
+                x, y = sess.run([x,y])
                 input_dict[xs[i]] = x
                 input_dict[ys[i]] = y
-            '''
+
             sess.run(opt, feed_dict=input_dict)
 
 
         times= []
         for j in range(10):
             tmp = time.time()
-            '''
+
             for i in range(len(xs)):
                 x,y  =batch_queue.dequeue()
+                x, y = sess.run([x,y])
                 input_dict[xs[i]] = x
                 input_dict[ys[i]] = y
-            '''
+
             sess.run(opt, feed_dict=input_dict)
             times.append(time.time()-tmp)
         avg_time = sum(times)/len(times)
