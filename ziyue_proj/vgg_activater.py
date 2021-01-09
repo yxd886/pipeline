@@ -126,13 +126,6 @@ class Activater():
         batch_queue = slim.prefetch_queue.prefetch_queue(
             [images, labels], capacity=2 * micro_batch_num)
 
-        sess = tf.Session(target, config=config)  # , config=tf.ConfigProto(allow_soft_placement=False))
-        print("222222222222222222222222")
-
-        sess.run(init)
-        print("333333333333333333333")
-
-
         input_dict = None
         '''
         placeholders = [node.outputs[0] for node in graph.get_operations() if node.node_def.op == 'Placeholder']
@@ -168,7 +161,10 @@ class Activater():
             x, y = batch_queue.dequeue()
             replace_input(graph,x,xs[i].name)
             replace_input(graph,y,ys[i].name)
-
+        sess = tf.Session(target, config=config)  # , config=tf.ConfigProto(allow_soft_placement=False))
+        print("222222222222222222222222")
+        sess.run(init)
+        print("333333333333333333333")
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
         opt = []
