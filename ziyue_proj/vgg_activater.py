@@ -99,7 +99,7 @@ class Activater():
         tf.import_graph_def(graph_def)
         print("import success")
         graph = tf.get_default_graph()
-        init = graph.get_operation_by_name("import/init/replica_0")
+        init0 = graph.get_operation_by_name("import/init/replica_0")
         print("11111111111111111111111")
 
         dataset = dataset_factory.get_dataset(
@@ -168,10 +168,9 @@ class Activater():
             x, y = batch_queue.dequeue()
             replace_input(graph,x,xs[i].name)
             replace_input(graph,y,ys[i].name)
-        init = tf.global_variables_initializer()
+        init1 = tf.global_variables_initializer()
         sess = tf.Session(target, config=config)  # , config=tf.ConfigProto(allow_soft_placement=False))
         print("222222222222222222222222")
-        sess.run(init)
         print("333333333333333333333")
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
@@ -194,6 +193,10 @@ class Activater():
         losses = tf.add_n(losses)
         accurate_num = get_tensors(graph,"accurate_num")
         accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
+        sess.run(init0)
+        sess.run(init1)
+
+
         for j in range(100000000000000):
             if j % 10 == 0:
                 ret = sess.run(opt+[losses,accurate_num], feed_dict=input_dict)
