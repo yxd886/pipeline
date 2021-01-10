@@ -188,8 +188,9 @@ class Activater():
             self.train_op = tf.train.GradientDescentOptimizer(learning_rate=0.01).minimize(new_loss)
 
         init = tf.global_variables_initializer()
-
-        sess = tf.Session()
+        config = tf.ConfigProto()
+        config.allow_soft_placement = True
+        sess = tf.Session(config=config)
         sess.run(init)
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
