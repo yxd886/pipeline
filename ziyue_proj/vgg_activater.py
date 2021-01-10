@@ -194,7 +194,7 @@ class Activater():
             f.write("global start time: {}\n".format(global_start_time))
         times= []
 
-        sess.run(init0)
+        #sess.run(init0)
         sess.run(init1)
 
 
