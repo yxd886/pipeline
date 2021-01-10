@@ -99,7 +99,7 @@ class Activater():
         tf.import_graph_def(graph_def)
         print("import success")
         graph = tf.get_default_graph()
-        init0 = graph.get_operation_by_name("import/init/replica_0")
+        #init0 = graph.get_operation_by_name("import/init/replica_0")
         print("11111111111111111111111")
 
         dataset = dataset_factory.get_dataset(

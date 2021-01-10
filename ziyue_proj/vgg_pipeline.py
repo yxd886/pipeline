@@ -186,7 +186,7 @@ class Activater():
         #self.train_op = tf.train.AdamOptimizer(learning_rate=0.2, beta1=0.9, beta2=0.98, epsilon=1e-9).minimize(new_loss)
         self.train_op = tf.train.GradientDescentOptimizer(learning_rate=0.2).minimize(new_loss)
 
-        init = tf.global_variables_initializer()
+        #init = tf.global_variables_initializer()
         self.graph = tf.get_default_graph()
         self.gdef = tf.get_default_graph().as_graph_def(add_shapes=True)
     def change_model(self,index,config):
