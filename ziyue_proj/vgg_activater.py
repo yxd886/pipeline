@@ -168,6 +168,7 @@ class Activater():
             x, y = batch_queue.dequeue()
             replace_input(graph,x,xs[i].name)
             replace_input(graph,y,ys[i].name)
+        init = tf.global_variables_initializer()
         sess = tf.Session(target, config=config)  # , config=tf.ConfigProto(allow_soft_placement=False))
         print("222222222222222222222222")
         sess.run(init)
