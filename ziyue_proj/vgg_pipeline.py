@@ -184,7 +184,7 @@ class Activater():
             new_loss =tf.add_n(losses,name="final_loss")/self.micro_batch_num
             new_outputs = tf.add_n(outputs)
         #self.train_op = tf.train.AdamOptimizer(learning_rate=0.2, beta1=0.9, beta2=0.98, epsilon=1e-9).minimize(new_loss)
-        self.train_op = tf.train.GradientDescentOptimizer(learning_rate=0.2).minimize(new_loss)
+        self.train_op = tf.train.GradientDescentOptimizer(learning_rate=0.001).minimize(new_loss)
 
         init = tf.global_variables_initializer()
         self.graph = tf.get_default_graph()
