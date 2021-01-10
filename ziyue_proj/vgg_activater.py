@@ -51,6 +51,13 @@ def get_tensors(graph,name):
                 ret.append(tensor)
     return ret
 
+
+def get_one_tensor(graph,name):
+    for op in graph.get_operations():
+        for tensor in op.outputs:
+            if name in tensor.name and "gradient" not in tensor.name:
+                return tensor
+
 def replace_input(graph,x,name):
     for op in graph.get_operations():
         for i,input in enumerate(op.inputs):
@@ -168,8 +175,7 @@ class Activater():
             x, y = batch_queue.dequeue()
             replace_input(graph,x,xs[i].name)
             replace_input(graph,y,ys[i].name)
-        losses = get_tensors(graph, "final_loss")
-        losses = tf.add_n(losses)
+        losses = get_one_tensor(graph, "final_loss")
         accurate_num = get_tensors(graph,"accurate_num")
         accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
         sess = tf.Session(target, config=config)  # , config=tf.ConfigProto(allow_soft_placement=False))
