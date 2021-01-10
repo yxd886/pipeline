@@ -44,9 +44,9 @@ def model_fn(batch_queue,model_name):
     if model_name=="vgg_19":
         import vgg
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
-            x = tf.placeholder(tf.float32, shape=(None, 224, 224, 3))
-            y = tf.placeholder(tf.float32, shape=(None,1001))
-            #x,y = batch_queue.dequeue()
+            #x = tf.placeholder(tf.float32, shape=(None, 224, 224, 3))
+            #y = tf.placeholder(tf.float32, shape=(None,1001))
+            x,y = batch_queue.dequeue()
         loss, endpoints,scopes = vgg.vgg_19(x,y, 1001)
 
         return loss, [x] + endpoints, ["input"] + scopes
