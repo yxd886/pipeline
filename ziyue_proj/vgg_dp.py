@@ -175,14 +175,14 @@ class Activater():
 
 
         tf.get_variable_scope()._reuse =tf.AUTO_REUSE
-        for i in range(4):
+        for i in range(1):
             with tf.device("gpu:{}".format(i)):
                 loss, output, scopes = self.model_fn(batch_queue,self.model_name)
                 losses.append(loss)
                 outputs.append(output[-1])
         self.scopes = scopes
-        with tf.device("gpu:3"):
-            new_loss =tf.add_n(losses,name="final_loss")/4
+        with tf.device("gpu:0"):
+            new_loss =tf.add_n(losses,name="final_loss")
             new_loss = tf.reduce_mean(new_loss)
             new_outputs = tf.add_n(outputs)
         #self.train_op = tf.train.AdamOptimizer(learning_rate=0.2, beta1=0.9, beta2=0.98, epsilon=1e-9).minimize(new_loss)
