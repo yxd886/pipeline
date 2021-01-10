@@ -182,10 +182,11 @@ class Activater():
                 outputs.append(output[-1])
         self.scopes = scopes
         with tf.device("gpu:3"):
-            new_loss =tf.add_n(losses,name="final_loss")/self.micro_batch_num
+            new_loss =tf.add_n(losses,name="final_loss")/4
+            new_loss = tf.reduce_mean(new_loss)
             new_outputs = tf.add_n(outputs)
         #self.train_op = tf.train.AdamOptimizer(learning_rate=0.2, beta1=0.9, beta2=0.98, epsilon=1e-9).minimize(new_loss)
-            self.train_op = tf.train.GradientDescentOptimizer(learning_rate=0.01).minimize(new_loss)
+            self.train_op = tf.train.GradientDescentOptimizer(learning_rate=0.01).minimize(new_loss,colocate_gradients_with_ops=True)
 
         init = tf.global_variables_initializer()
         config = tf.ConfigProto()
