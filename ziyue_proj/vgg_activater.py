@@ -168,6 +168,10 @@ class Activater():
             x, y = batch_queue.dequeue()
             replace_input(graph,x,xs[i].name)
             replace_input(graph,y,ys[i].name)
+        losses = get_tensors(graph, "final_loss")
+        losses = tf.add_n(losses)
+        accurate_num = get_tensors(graph,"accurate_num")
+        accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
         init1 = tf.global_variables_initializer()
         sess = tf.Session(target, config=config)  # , config=tf.ConfigProto(allow_soft_placement=False))
         print("222222222222222222222222")
@@ -189,10 +193,7 @@ class Activater():
         with open("time_record.txt", "w") as f:
             f.write("global start time: {}\n".format(global_start_time))
         times= []
-        losses = get_tensors(graph, "final_loss")
-        losses = tf.add_n(losses)
-        accurate_num = get_tensors(graph,"accurate_num")
-        accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
+
         sess.run(init0)
         sess.run(init1)
 
