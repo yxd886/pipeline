@@ -204,22 +204,19 @@ class Activater():
 
 
         for j in range(100000000000000):
+            ret = sess.run(opt + [losses, accurate_num], feed_dict=input_dict)
+            loss = ret[-2]
+            top5accuracy = ret[-1] / (micro_batch_num * batch_size)
             if j % 10 == 0:
-                ret = sess.run(opt+[losses,accurate_num], feed_dict=input_dict)
-                loss = ret[-2]
-                top5accuracy = ret[-1]/(micro_batch_num*batch_size)
                 print("Step:{},Loss:{},top5 accuracy:{}".format(j,loss,top5accuracy))
-                gap = top5accuracy*100 // 5 * 5
-                if gap not in recorded_accuracy5:
-                    global_end_time = time.time()
-                    recorded_accuracy5.append(gap)
-                    print("achieveing {}% at the first time, concreate top5 accuracy: {}%. time slot: {}, duration: {}s\n".format(gap,top5accuracy*100,global_end_time,global_end_time-global_start_time),flush=True)
-                    with open("time_record.txt","a+") as f:
-                        f.write("achieveing {}% at the first time, concreate top5 accuracy: {}%. time slot: {}, duration: {}s\n".format(gap,top5accuracy*100,global_end_time,global_end_time-global_start_time))
+            gap = top5accuracy*100 // 5 * 5
+            if gap not in recorded_accuracy5:
+                global_end_time = time.time()
+                recorded_accuracy5.append(gap)
+                print("achieveing {}% at the first time, concreate top5 accuracy: {}%. time slot: {}, duration: {}s\n".format(gap,top5accuracy*100,global_end_time,global_end_time-global_start_time),flush=True)
+                with open("time_record.txt","a+") as f:
+                    f.write("achieveing {}% at the first time, concreate top5 accuracy: {}%. time slot: {}, duration: {}s\n".format(gap,top5accuracy*100,global_end_time,global_end_time-global_start_time))
 
-
-            else:
-                sess.run(opt, feed_dict=input_dict)
 
 
 
