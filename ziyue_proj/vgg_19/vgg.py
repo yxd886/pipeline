@@ -192,7 +192,6 @@ def vgg_19(inputs,
         accurate_num = tf.reduce_sum(acc_array,name="accurate_num")
 
         loss = tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=net)
-        loss = tf.reduce_sum(loss)
       scopes.append('fc11')
       outputs.append(loss)
       return loss, outputs,scopes
