@@ -99,7 +99,7 @@ class Activater():
         tf.import_graph_def(graph_def)
         print("import success")
         graph = tf.get_default_graph()
-        #init0 = graph.get_operation_by_name("import/init/replica_0")
+        init0 = graph.get_operation_by_name("import/init/replica_0")
         print("11111111111111111111111")
 
         dataset = dataset_factory.get_dataset(
@@ -172,7 +172,6 @@ class Activater():
         losses = tf.add_n(losses)
         accurate_num = get_tensors(graph,"accurate_num")
         accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
-        init1 = tf.global_variables_initializer()
         sess = tf.Session(target, config=config)  # , config=tf.ConfigProto(allow_soft_placement=False))
         print("222222222222222222222222")
         print("333333333333333333333")
@@ -194,8 +193,8 @@ class Activater():
             f.write("global start time: {}\n".format(global_start_time))
         times= []
 
-        #sess.run(init0)
-        sess.run(init1)
+        sess.run(init0)
+        #sess.run(init1)
 
 
         for j in range(100000000000000):
