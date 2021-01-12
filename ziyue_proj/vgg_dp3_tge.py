@@ -44,9 +44,9 @@ def model_fn(batch_queue,model_name):
     if model_name=="vgg_19":
         import vgg
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
-            x = tf.placeholder(tf.float32, shape=(None, 224, 224, 3))
-            y = tf.placeholder(tf.float32, shape=(None,1001))
-            #x,y = batch_queue.dequeue()
+            #x = tf.placeholder(tf.float32, shape=(None, 224, 224, 3))
+            #y = tf.placeholder(tf.float32, shape=(None,1001))
+            x,y = batch_queue.dequeue()
         loss, endpoints,scopes = vgg.vgg_19(x,y, 1001)
 
         return loss, [x] + endpoints, ["input"] + scopes
@@ -140,7 +140,7 @@ class Activater():
             return _setter.choose
         losses = []
         outputs = []
-        '''
+
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
 
             dataset = dataset_factory.get_dataset(
@@ -173,79 +173,70 @@ class Activater():
             batch_queue = slim.prefetch_queue.prefetch_queue(
                 [images, labels], capacity=2 * micro_batch_num)
 
-        '''
+
         tf.get_variable_scope()._reuse =tf.AUTO_REUSE
-        for i in range(self.micro_batch_num):
-            loss, output, scopes = self.model_fn(None,self.model_name)
-            losses.append(loss)
-            outputs.append(output[-1])
+        for i in range(1):
+                loss, output, scopes = self.model_fn(batch_queue,self.model_name)
+                losses.append(loss)
+                outputs.append(output[-1])
         self.scopes = scopes
-        with tf.variable_scope(self.scopes[-1]):
-            new_loss =tf.add_n(losses,name="final_loss")/self.micro_batch_num
-            new_outputs = tf.add_n(outputs)
+        new_loss =tf.add_n(losses)
+        new_loss = tf.reduce_mean(new_loss,name="final_loss")
         #self.train_op = tf.train.AdamOptimizer(learning_rate=0.2, beta1=0.9, beta2=0.98, epsilon=1e-9).minimize(new_loss)
-        self.train_op = tf.train.GradientDescentOptimizer(learning_rate=0.01).minimize(new_loss)
-
+        self.train_op = tf.train.GradientDescentOptimizer(learning_rate=0.01).minimize(new_loss,colocate_gradients_with_ops=True)
         init = tf.global_variables_initializer()
-        self.graph = tf.get_default_graph()
-        self.gdef = tf.get_default_graph().as_graph_def(add_shapes=True)
-    def change_model(self,index,config):
 
-        with open( self.model_name+"/"+str(index)+"/init_graph.pbtxt", "w") as f:
-            f.write(str(tf.get_default_graph().as_graph_def(add_shapes=True)))
-
-        strategy = {}
-        assignment = {}
-        for i in range(int(len(config)//2)):
-            indexs = config[i*2]
-            _strategy = config[i*2+1]
-            for j in range(indexs[0],indexs[1]+1,1):
-                assignment[self.scopes[j]] = _strategy
-
-        '''
-        for i in range(len(self.scopes)):
-            if i <8:
-                assignment[self.scopes[i]] = [0,0]
-            elif i<14:
-                assignment[self.scopes[i]] = [1,1]
-            else:
-                assignment[self.scopes[i]] = [2,3]
-
-        '''
-        op_scope_dict = self.compute_operation_scope_dict()
-        for op in op_scope_dict:
-            place = [0]*len(self.devices)
-            decision = assignment[ [op]]
-            #for i in range(decision[0],decision[1]+1,1):
-            for i in decision:
-                place[i] = 1
-            strategy[op] = [1]+place
-        for op in self.graph.get_operations():
-            if op.name not in strategy.keys():
-                print(op.name)
-                strategy[op.name] = [1]+place
-        import pickle as pkl
-        with open( self.model_name+"/"+str(index)+"/strategy.pkl","wb") as f:
-            pkl.dump(strategy,f)
+        g = tf.get_default_graph().as_graph_def(add_shapes=True)
         import tge
+        strategy = {node.name: [1, 1, 1, 1, 1] for node in g.node}
 
-        # options = [[0, 1], [1, 0], [0, 2], [2, 0], [1, 1]]
-        # strategy = { node.name: [np.random.randint(0, 2)] + options[np.random.randint(0, len(options))] for node in gdef.node }
-
-        g = (tge.TGE(self.gdef, self.devices, ["GradientDescent"])
+        g = (tge.TGE(g, devices)
              .custom(strategy)
-             #.replace_placeholder(self.batch_size)
+             # .replace_placeholder(BATCHSIZE)
              .use_collective()
+             # .verbose()
              .compile()
              .get_result()
              )
-        with open( self.model_name+"/"+str(index)+"/modified.pbtxt", "w") as fo:
+
+        with open( "vgg_tge_modified.pbtxt", "w") as fo:
             fo.write(pbtf.MessageToString(g))
 
+        tf.reset_default_graph()
+        gdef = graph_pb2.GraphDef()
+        with open("vgg_tge_modified.pbtxt", "r")as f:
+            txt = f.read()
+        pbtf.Parse(txt, gdef)
+
+        tf.import_graph_def(gdef)
+        graph = tf.get_default_graph()
+
+        opt = graph.get_operation_by_name("import/GradientDescent/replica_0")
+        loss = tf.reduce_mean(tf.add_n(get_tensors("final_loss")))
+        init = graph.get_operation_by_name("import/init/replica_0")
+
+        config = tf.ConfigProto()
+        config.allow_soft_placement = True
+        sess = tf.Session(config=config)
+        sess.run(init)
+        coord = tf.train.Coordinator()
+        threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+        for i in range(10000000):
+            _,cal_loss = sess.run([opt,loss])
+            if i%10==0:
+                print("Step:{},Loss:{}".format(i,cal_loss))
+
+
     def activate_unit(self):
-        for i in range(1,len(four_strategies)+1,1):
-            self.build_model()
-            self.change_model(i,four_strategies[i-1])
+        self.build_model()
+
+def get_tensors(graph,name):
+    ret = []
+    for op in graph.get_operations():
+        for tensor in op.outputs:
+            if name in tensor.name and "gradient" not in tensor.name:
+                ret.append(tensor)
+    return ret
 if __name__ == '__main__':
     config_dict =dict()
     if os.path.exists("vgg_config.json"):
