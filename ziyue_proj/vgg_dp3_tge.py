@@ -212,7 +212,7 @@ class Activater():
         graph = tf.get_default_graph()
 
         opt = graph.get_operation_by_name("import/GradientDescent/replica_0")
-        loss = tf.reduce_mean(tf.add_n(get_tensors("final_loss")))
+        loss = tf.reduce_mean(tf.add_n(get_tensors(graph,"final_loss")))
         init = graph.get_operation_by_name("import/init/replica_0")
 
         config = tf.ConfigProto()
