@@ -44,9 +44,9 @@ def model_fn(batch_queue,model_name):
     if model_name=="vgg_19":
         import vgg
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
-            #x = tf.placeholder(tf.float32, shape=(None, 224, 224, 3))
-            #y = tf.placeholder(tf.float32, shape=(None,1001))
-            x,y = batch_queue.dequeue()
+            x = tf.placeholder(tf.float32, shape=(None, 224, 224, 3))
+            y = tf.placeholder(tf.float32, shape=(None,1001))
+            #x,y = batch_queue.dequeue()
         loss, endpoints,scopes = vgg.vgg_19(x,y, 1001)
 
         return loss, [x] + endpoints, ["input"] + scopes
@@ -141,42 +141,9 @@ class Activater():
         losses = []
         outputs = []
 
-        with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
-
-            dataset = dataset_factory.get_dataset(
-                "imagenet", "train", "/data/slim_imagenet")
-
-            preprocessing_name = "vgg_19"
-            image_preprocessing_fn = preprocessing_factory.get_preprocessing(
-                preprocessing_name,
-                is_training=True)
-
-            provider = slim.dataset_data_provider.DatasetDataProvider(
-                dataset,
-                num_readers=4,
-                common_queue_capacity=20 * batch_size,
-                common_queue_min=10 * batch_size)
-            [image, label] = provider.get(['image', 'label'])
-
-            train_image_size = 224
-
-            image = image_preprocessing_fn(image, train_image_size, train_image_size)
-            print("image shape:", image.shape)
-            print("label shape:", label.shape)
-            images, labels = tf.train.batch(
-                [image, label],
-                batch_size=batch_size,
-                num_threads=4,
-                capacity=5 * batch_size)
-            labels = slim.one_hot_encoding(
-                labels, dataset.num_classes)
-            batch_queue = slim.prefetch_queue.prefetch_queue(
-                [images, labels], capacity=2 * micro_batch_num)
-
-
         tf.get_variable_scope()._reuse =tf.AUTO_REUSE
         for i in range(1):
-                loss, output, scopes = self.model_fn(batch_queue,self.model_name)
+                loss, output, scopes = self.model_fn(None,self.model_name)
                 losses.append(loss)
                 outputs.append(output[-1])
         self.scopes = scopes
@@ -211,6 +178,43 @@ class Activater():
         tf.import_graph_def(gdef)
         graph = tf.get_default_graph()
 
+        dataset = dataset_factory.get_dataset(
+            "imagenet", "train", "/data/slim_imagenet")
+
+        preprocessing_name = "vgg_19"
+        image_preprocessing_fn = preprocessing_factory.get_preprocessing(
+            preprocessing_name,
+            is_training=True)
+
+        provider = slim.dataset_data_provider.DatasetDataProvider(
+            dataset,
+            num_readers=4,
+            common_queue_capacity=20 * batch_size,
+            common_queue_min=10 * batch_size)
+        [image, label] = provider.get(['image', 'label'])
+
+        train_image_size = 224
+
+        image = image_preprocessing_fn(image, train_image_size, train_image_size)
+        print("image shape:", image.shape)
+        print("label shape:", label.shape)
+        images, labels = tf.train.batch(
+            [image, label],
+            batch_size=batch_size,
+            num_threads=4,
+            capacity=5 * batch_size)
+        labels = slim.one_hot_encoding(
+            labels, dataset.num_classes)
+        batch_queue = slim.prefetch_queue.prefetch_queue(
+            [images, labels], capacity=2 * micro_batch_num)
+
+        x_tensor = graph.get_tensor_by_name("import/Placeholder/replica_0:0")
+        y_tensor = graph.get_tensor_by_name("import/Placeholder_1/replica_0:0")
+        x,y = batch_queue.dequeue()
+        replace_input(graph,x,x_tensor.name)
+        replace_input(graph,y,y_tensor.name)
+
+
         opt = graph.get_operation_by_name("import/GradientDescent/replica_0")
         loss = tf.reduce_mean(tf.add_n(get_tensors(graph,"final_loss")))
         init = graph.get_operation_by_name("import/init/replica_0")
@@ -237,6 +241,13 @@ def get_tensors(graph,name):
             if name in tensor.name and "gradient" not in tensor.name:
                 ret.append(tensor)
     return ret
+
+def replace_input(graph,x,name):
+    for op in graph.get_operations():
+        for i,input in enumerate(op.inputs):
+            if input.name==name:
+                op._update_input(i,x)
+
 if __name__ == '__main__':
     config_dict =dict()
     if os.path.exists("vgg_config.json"):
