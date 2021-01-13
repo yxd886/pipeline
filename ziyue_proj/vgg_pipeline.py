@@ -182,7 +182,7 @@ class Activater():
         self.scopes = scopes
         with tf.variable_scope(self.scopes[-1]):
             new_loss =tf.add_n(losses)/self.micro_batch_num
-            new_loss = tf.reduce_mean(new_loss)
+            new_loss = tf.reduce_mean(new_loss,name="final_loss")
             new_outputs = tf.add_n(outputs)
         #self.train_op = tf.train.AdamOptimizer(learning_rate=0.2, beta1=0.9, beta2=0.98, epsilon=1e-9).minimize(new_loss)
         self.train_op = tf.train.GradientDescentOptimizer(learning_rate=0.01).minimize(new_loss)
@@ -216,7 +216,7 @@ class Activater():
         op_scope_dict = self.compute_operation_scope_dict()
         for op in op_scope_dict:
             place = [0]*len(self.devices)
-            decision = assignment[ [op]]
+            decision = assignment[op_scope_dict[op]]
             #for i in range(decision[0],decision[1]+1,1):
             for i in decision:
                 place[i] = 1
