@@ -144,8 +144,8 @@ class Activater():
             ys.append("import/input_{}/Placeholder_1/replica_0:0".format(i))
         x, y = batch_queue.dequeue()
         for i in range(len(xs)):
-            replace_input(graph,x[i*batch_size:(i+1)*batch_size],xs[i].name)
-            replace_input(graph,y[i*batch_size:(i+1)*batch_size],ys[i].name)
+            replace_input(graph,x[i*batch_size:(i+1)*batch_size],xs[i])
+            replace_input(graph,y[i*batch_size:(i+1)*batch_size],ys[i])
         losses = tf.reduce_mean(tf.add_n(get_tensors(graph, "final_loss")))
         accurate_num = get_tensors(graph,"accurate_num")
         accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
