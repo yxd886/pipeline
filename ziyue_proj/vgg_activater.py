@@ -85,20 +85,7 @@ class Activater():
     def activate_unit(self,path,graph_def):
         #setup_workers(workers, "grpc+verbs")
         tf.reset_default_graph()
-        resolver = TFConfigClusterResolver()
-        cluster = resolver.cluster_spec()
-        '''
-        dist = tf.distribute.experimental.MultiWorkerMirroredStrategy(
-            tf.distribute.experimental.CollectiveCommunication.NCCL)
-        config = dist.update_config_proto(tf.ConfigProto())
-        config.ClearField("device_filters")
-        config.allow_soft_placement = True  # log_device_placement=True)
-        config.gpu_options.allow_growth = True
-        '''
         config = tf.ConfigProto()
-        with open("dist_config.pbtxt", "r") as f:
-            txt = f.read()
-        pbtf.Parse(txt, config)
         #server = tf.distribute.Server(cluster, job_name='worker', task_index=0, protocol="grpc+verbs",
          #                                  config=config)
         target = None
@@ -120,8 +107,8 @@ class Activater():
         provider = slim.dataset_data_provider.DatasetDataProvider(
             dataset,
             num_readers=4,
-            common_queue_capacity=20 * batch_size,
-            common_queue_min=10 * batch_size)
+            common_queue_capacity=20 * batch_size*micro_batch_num,
+            common_queue_min=10 * batch_size*micro_batch_num,)
         [image, label] = provider.get(['image', 'label'])
 
         train_image_size = 224
@@ -132,9 +119,9 @@ class Activater():
         print("label shape:", label.shape)
         images, labels = tf.train.batch(
             [image, label],
-            batch_size=batch_size,
+            batch_size=batch_size*micro_batch_num,
             num_threads=4,
-            capacity=5 * batch_size)
+            capacity=5 * batch_size*micro_batch_num)
         labels = slim.one_hot_encoding(
             labels, dataset.num_classes)
         batch_queue = slim.prefetch_queue.prefetch_queue(
@@ -150,31 +137,15 @@ class Activater():
         '''
         #prepare input
 
-
-        x0 = graph.get_tensor_by_name("import/input/Placeholder/replica_0:0")
-        x1 = graph.get_tensor_by_name("import/input_1/Placeholder/replica_0:0")
-        x2 = graph.get_tensor_by_name("import/input_2/Placeholder/replica_0:0")
-        x3 = graph.get_tensor_by_name("import/input_3/Placeholder/replica_0:0")
-        x4 = graph.get_tensor_by_name("import/input_4/Placeholder/replica_0:0")
-        x5 = graph.get_tensor_by_name("import/input_5/Placeholder/replica_0:0")
-        x6 = graph.get_tensor_by_name("import/input_6/Placeholder/replica_0:0")
-        x7 = graph.get_tensor_by_name("import/input_7/Placeholder/replica_0:0")
-        y0 = graph.get_tensor_by_name("import/input/Placeholder_1/replica_0:0")
-        y1 = graph.get_tensor_by_name("import/input_1/Placeholder_1/replica_0:0")
-        y2 = graph.get_tensor_by_name("import/input_2/Placeholder_1/replica_0:0")
-        y3 = graph.get_tensor_by_name("import/input_3/Placeholder_1/replica_0:0")
-        y4 = graph.get_tensor_by_name("import/input_4/Placeholder_1/replica_0:0")
-        y5 = graph.get_tensor_by_name("import/input_5/Placeholder_1/replica_0:0")
-        y6 = graph.get_tensor_by_name("import/input_6/Placeholder_1/replica_0:0")
-        y7 = graph.get_tensor_by_name("import/input_7/Placeholder_1/replica_0:0")
-
-        xs = [x0,x1,x2,x3,x4,x5,x6,x7]
-        ys = [y0,y1,y2,y3,y4,y5,y6,y7]
-
+        xs = ["import/input/Placeholder/replica_0:0"]
+        ys = ["import/input/Placeholder_1/replica_0:0"]
+        for i in range(1,micro_batch_num):
+            xs.append("import/input_{}/Placeholder/replica_0:0".format(i))
+            ys.append("import/input_{}/Placeholder_1/replica_0:0".format(i))
+        x, y = batch_queue.dequeue()
         for i in range(len(xs)):
-            x, y = batch_queue.dequeue()
-            replace_input(graph,x,xs[i].name)
-            replace_input(graph,y,ys[i].name)
+            replace_input(graph,x[i*batch_size:(i+1)*batch_size],xs[i].name)
+            replace_input(graph,y[i*batch_size:(i+1)*batch_size],ys[i].name)
         losses = tf.reduce_mean(tf.add_n(get_tensors(graph, "final_loss")))
         accurate_num = get_tensors(graph,"accurate_num")
         accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
