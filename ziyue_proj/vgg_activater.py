@@ -175,7 +175,7 @@ class Activater():
             x, y = batch_queue.dequeue()
             replace_input(graph,x,xs[i].name)
             replace_input(graph,y,ys[i].name)
-        losses = get_one_tensor(graph, "final_loss")
+        losses = tf.reduce_mean(tf.add_n(get_tensors(graph, "final_loss")))
         accurate_num = get_tensors(graph,"accurate_num")
         accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
         sess = tf.Session(target, config=config)  # , config=tf.ConfigProto(allow_soft_placement=False))
@@ -185,12 +185,8 @@ class Activater():
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
         opt = []
         for sink in self.sinks:
-            for i in range(10):
-                try:
-                    op = graph.get_operation_by_name('import/' + sink + "/replica_" + str(i))
-                    opt.append(op)
-                except:
-                    break
+            op = graph.get_operation_by_name('import/' + sink + "/replica_0")
+            opt.append(op)
         # opt = [graph.get_operation_by_name('import/' + x) for x in self.sinks]
         print("444444444444444444444")
         recorded_accuracy5 = []
