@@ -85,7 +85,7 @@ class Activater():
     def activate_unit(self,path,graph_def):
         #setup_workers(workers, "grpc+verbs")
         tf.reset_default_graph()
-        config = tf.ConfigProto()
+
         #server = tf.distribute.Server(cluster, job_name='worker', task_index=0, protocol="grpc+verbs",
          #                                  config=config)
         target = None
@@ -149,6 +149,9 @@ class Activater():
         losses = tf.reduce_mean(tf.add_n(get_tensors(graph, "final_loss")))
         accurate_num = get_tensors(graph,"accurate_num")
         accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
+
+        config = tf.ConfigProto()
+        config.allow_soft_placement = True
         sess = tf.Session(target, config=config)  # , config=tf.ConfigProto(allow_soft_placement=False))
         print("222222222222222222222222")
         print("333333333333333333333")
