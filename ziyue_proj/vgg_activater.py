@@ -148,7 +148,7 @@ class Activater():
             replace_input(graph,y[i*batch_size:(i+1)*batch_size],ys[i])
         losses = tf.reduce_mean(tf.add_n(get_tensors(graph, "final_loss")))
         accurate_num = get_tensors(graph,"top_accuracy")
-        accurate_num = tf.keras.layers.Maximum(accurate_num)
+        accurate_num = tf.keras.layers.Maximum()(accurate_num)
 
         config = tf.ConfigProto()
         config.allow_soft_placement = True
