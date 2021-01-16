@@ -189,9 +189,11 @@ def vgg_19(inputs,
           return tf.gather(y,index)
         acc_array = tf.vectorized_map(fn,(y,indexs))
 
-        accurate_num = tf.reduce_sum(acc_array,name="accurate_num")
+        top_accuracy = tf.reduce_sum(acc_array)/tf.shape(acc_array)[0]
+        top_accuracy = tf.identity(top_accuracy,name="top_accuracy")
 
         loss = tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=net)
+        loss = tf.reduce_mean(loss)
       scopes.append('fc11')
       outputs.append(loss)
       return loss, outputs,scopes
