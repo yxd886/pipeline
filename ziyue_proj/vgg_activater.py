@@ -148,6 +148,7 @@ class Activater():
             replace_input(graph,y[i*batch_size:(i+1)*batch_size],ys[i])
         losses = tf.reduce_mean(tf.add_n(get_tensors(graph, "final_loss")))
         accurate_num = get_tensors(graph,"top_accuracy")
+        accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
 
         config = tf.ConfigProto()
         config.allow_soft_placement = True
@@ -173,9 +174,9 @@ class Activater():
 
 
         for j in range(100000000000000):
-            ret = sess.run(opt + [losses]+accurate_num, feed_dict=input_dict)
-            loss = ret[-(len(accurate_num)+1)]
-            top5accuracy = max(ret[-(len(accurate_num)):])
+            ret = sess.run(opt + [losses,accurate_num], feed_dict=input_dict)
+            loss = ret[-2]
+            top5accuracy = ret[-1]
             if j % 10 == 0:
                 print("Step:{},Loss:{},top5 accuracy:{}".format(j,loss,top5accuracy))
             gap = top5accuracy*100 // 5 * 5
