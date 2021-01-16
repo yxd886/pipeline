@@ -146,7 +146,8 @@ class Activater():
         for i in range(len(xs)):
             replace_input(graph,x[i*batch_size:(i+1)*batch_size],xs[i])
             replace_input(graph,y[i*batch_size:(i+1)*batch_size],ys[i])
-        losses = tf.reduce_mean(tf.add_n(get_tensors(graph, "final_loss")))
+        losses = get_tensors(graph, "final_loss")
+        losses = tf.reduce_mean(tf.add_n(losses)/len(losses))
         accurate_num = get_tensors(graph,"top_accuracy")
         print("accurate_num:",accurate_num)
         accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
