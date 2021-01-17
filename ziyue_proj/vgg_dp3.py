@@ -52,6 +52,13 @@ def model_fn(batch_queue,model_name):
         return loss, [x] + endpoints, ["input"] + scopes
 
 
+def get_tensors(graph,name):
+    ret = []
+    for op in graph.get_operations():
+        for tensor in op.outputs:
+            if name in tensor.name and "gradient" not in tensor.name:
+                ret.append(tensor)
+    return ret
 
 class Activater():
     def __init__(self,micro_batch_num,batch_size,model_name):
@@ -121,6 +128,15 @@ class Activater():
         self.apply_grad = []
         self.instances=[]
         self.gradients = []
+
+        gpu_num = 4
+
+        recorded_accuracy5 = []
+        global_start_time = time.time()
+        with open("vgg_dp3_time_record.txt", "w") as f:
+            f.write("global start time: {}\n".format(global_start_time))
+        times= []
+
         class setter():
             def __init__(self,assignment,devices):
                 self.assignment = assignment
@@ -171,22 +187,27 @@ class Activater():
             labels = slim.one_hot_encoding(
                 labels, dataset.num_classes)
             batch_queue = slim.prefetch_queue.prefetch_queue(
-                [images, labels], capacity=2 * micro_batch_num)
+                [images, labels], capacity=2 * gpu_num)
 
 
         tf.get_variable_scope()._reuse =tf.AUTO_REUSE
-        for i in range(3):
+        for i in range(gpu_num):
             with tf.device("gpu:{}".format(i)):
                 loss, output, scopes = self.model_fn(batch_queue,self.model_name)
                 losses.append(loss)
                 outputs.append(output[-1])
         self.scopes = scopes
         with tf.device("gpu:2"):
-            new_loss =tf.add_n(losses,name="final_loss")/3
+            new_loss =tf.add_n(losses,name="final_loss")/gpu_num
             new_loss = tf.reduce_mean(new_loss)
             new_outputs = tf.add_n(outputs)
         #self.train_op = tf.train.AdamOptimizer(learning_rate=0.2, beta1=0.9, beta2=0.98, epsilon=1e-9).minimize(new_loss)
             self.train_op = tf.train.GradientDescentOptimizer(learning_rate=0.01).minimize(new_loss,colocate_gradients_with_ops=True)
+
+        graph = tf.get_default_graph()
+        accurate_num = get_tensors(graph,"top_accuracy")
+        print("accurate_num:",accurate_num)
+        accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
 
         init = tf.global_variables_initializer()
         config = tf.ConfigProto()
@@ -196,9 +217,19 @@ class Activater():
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
         for i in range(10000000):
-            _,loss = sess.run([self.train_op,new_loss])
+            _,loss,accuracy_num = sess.run([self.train_op,new_loss,accurate_num])
+            top5accuracy = accuracy_num / (gpu_num * batch_size)
             if i%10==0:
-                print("Step:{},Loss:{}".format(i,loss))
+                print("Step:{},Loss:{},top5 accuracy:{}".format(i,loss,top5accuracy))
+            gap = top5accuracy*100 // 5 * 5
+            if gap not in recorded_accuracy5:
+                global_end_time = time.time()
+                recorded_accuracy5.append(gap)
+                print("achieveing {}% at the first time, concreate top5 accuracy: {}%. time slot: {}, duration: {}s\n".format(gap,top5accuracy*100,global_end_time,global_end_time-global_start_time),flush=True)
+                with open("vgg_dp3_time_record.txt","a+") as f:
+                    f.write("achieveing {}% at the first time, concreate top5 accuracy: {}%. time slot: {}, duration: {}s\n".format(gap,top5accuracy*100,global_end_time,global_end_time-global_start_time))
+
+
 
 
     def activate_unit(self):
