@@ -208,7 +208,8 @@ class Activater():
         graph = tf.get_default_graph()
         accurate_num = get_tensors(graph,"top_accuracy")
         print("accurate_num:",accurate_num)
-        accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
+        #accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
+        accurate_num = tf.reduce_sum(accurate_num[0])
 
         init = tf.global_variables_initializer()
         config = tf.ConfigProto()
@@ -219,7 +220,9 @@ class Activater():
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
         for i in range(10000000):
             _,loss,accuracy_num = sess.run([self.train_op,new_loss,accurate_num])
-            top5accuracy = accuracy_num / (gpu_num * batch_size)
+            #top5accuracy = accuracy_num / (gpu_num * batch_size)
+            top5accuracy = accuracy_num / ( batch_size)
+
             if i%10==0:
                 print("Step:{},Loss:{},top5 accuracy:{}".format(i,loss,top5accuracy))
             gap = top5accuracy*100 // 5 * 5
