@@ -212,6 +212,7 @@ class Activater():
         accurate_num = tf.reduce_sum(accurate_num[0])
 
 
+
         init = tf.global_variables_initializer()
         config = tf.ConfigProto()
         config.allow_soft_placement = True
