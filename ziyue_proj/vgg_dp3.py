@@ -220,13 +220,18 @@ class Activater():
         sess.run(init)
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+        start_time = time.time()
+
         for i in range(10000000):
             _,loss,accuracy_num = sess.run([self.train_op,new_loss,accurate_num])
             #top5accuracy = accuracy_num / (gpu_num * batch_size)
             top5accuracy = accuracy_num / ( batch_size)
 
             if i%10==0:
-                print("Step:{},Loss:{},top5 accuracy:{}".format(i,loss,top5accuracy))
+                end_time = time.time()
+                print("Step:{},Loss:{},top5 accuracy:{},per_step_time:{}".format(i,loss,top5accuracy,(end_time-start_time)/10))
+                start_time = time.time()
+
             gap = top5accuracy*100 // 5 * 5
             if gap not in recorded_accuracy5:
                 global_end_time = time.time()

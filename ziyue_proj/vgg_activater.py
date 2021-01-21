@@ -177,14 +177,16 @@ class Activater():
         sess.run(init0)
         #sess.run(init1)
 
-
+        start_time = time.time()
         for j in range(100000000000000):
             ret = sess.run(opt + [losses,accurate_num], feed_dict=input_dict)
             loss = ret[-2]
             top5accuracy_num = ret[-1]
             top5accuracy = top5accuracy_num/64
             if j % 10 == 0:
-                print("Step:{},Loss:{},top5 accuracy:{}".format(j,loss,top5accuracy))
+                end_time = time.time()
+                print("Step:{},Loss:{},top5 accuracy:{},per_step_time:{}".format(j,loss,top5accuracy,(end_time-start_time)/10))
+                start_time = time.time()
             gap = top5accuracy*100 // 5 * 5
             if gap not in recorded_accuracy5:
                 global_end_time = time.time()
