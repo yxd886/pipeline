@@ -150,7 +150,10 @@ class Activater():
         losses = tf.reduce_mean(tf.add_n(losses)/len(losses))
         accurate_num = get_tensors(graph,"top_accuracy")
         print("accurate_num:",accurate_num)
-        accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
+        total_batch_size = batch_size*micro_batch_num
+        size_for_each = total_batch_size/len(accurate_num)
+        num_to_calculate = int(64/size_for_each)
+        accurate_num = tf.reduce_sum(tf.add_n(accurate_num[:num_to_calculate]))
 
         config = tf.ConfigProto()
         config.allow_soft_placement = True
@@ -179,7 +182,7 @@ class Activater():
             ret = sess.run(opt + [losses,accurate_num], feed_dict=input_dict)
             loss = ret[-2]
             top5accuracy_num = ret[-1]
-            top5accuracy = top5accuracy_num/(batch_size*micro_batch_num)
+            top5accuracy = top5accuracy_num/64
             if j % 10 == 0:
                 print("Step:{},Loss:{},top5 accuracy:{}".format(j,loss,top5accuracy))
             gap = top5accuracy*100 // 5 * 5
