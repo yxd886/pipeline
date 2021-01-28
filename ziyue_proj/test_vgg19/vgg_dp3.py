@@ -11,18 +11,20 @@ import sys
 from tensorflow.python.client import timeline
 from tensorflow.distribute.cluster_resolver import TFConfigClusterResolver
 from tensorflow.python.ops import collective_ops
+sys.path.append('../')
+sys.path.append('../../')
 from datasets import dataset_factory
 from preprocessing import preprocessing_factory
 import tf_slim as slim
-sys.path.append('../')
-sys.path.append('./bert/')
-sys.path.append('./vgg_19/')
-sys.path.append('./resnet152/')
-sys.path.append('./inception_v3/')
-sys.path.append('./resnet152/')
-sys.path.append('./resnet50/')
-sys.path.append('./transformer/')
-sys.path.append('./xl_net/')
+
+sys.path.append('../bert/')
+sys.path.append('../vgg_19/')
+sys.path.append('../resnet152/')
+sys.path.append('../inception_v3/')
+sys.path.append('../resnet152/')
+sys.path.append('../resnet50/')
+sys.path.append('../transformer/')
+sys.path.append('../xl_net/')
 import multiprocessing as mp
 
 
@@ -44,14 +46,21 @@ def model_fn(batch_queue,model_name):
     if model_name=="vgg_19":
         import vgg
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
-            x = tf.placeholder(tf.float32, shape=(None, 224, 224, 3))
-            y = tf.placeholder(tf.float32, shape=(None,1001))
-            #x,y = batch_queue.dequeue()
+            #x = tf.placeholder(tf.float32, shape=(None, 224, 224, 3))
+            #y = tf.placeholder(tf.float32, shape=(None,1001))
+            x,y = batch_queue.dequeue()
         loss, endpoints,scopes = vgg.vgg_19(x,y, 1001)
 
         return loss, [x] + endpoints, ["input"] + scopes
 
 
+def get_tensors(graph,name):
+    ret = []
+    for op in graph.get_operations():
+        for tensor in op.outputs:
+            if name in tensor.name and "gradient" not in tensor.name:
+                ret.append(tensor)
+    return ret
 
 class Activater():
     def __init__(self,micro_batch_num,batch_size,model_name):
@@ -121,6 +130,15 @@ class Activater():
         self.apply_grad = []
         self.instances=[]
         self.gradients = []
+
+        gpu_num = 4
+
+        recorded_accuracy5 = []
+        global_start_time = time.time()
+        with open("vgg_dp3_time_record.txt", "w") as f:
+            f.write("global start time: {}\n".format(global_start_time))
+        times= []
+
         class setter():
             def __init__(self,assignment,devices):
                 self.assignment = assignment
@@ -140,7 +158,7 @@ class Activater():
             return _setter.choose
         losses = []
         outputs = []
-        '''
+
         with tf.variable_scope("input", reuse=tf.AUTO_REUSE):
 
             dataset = dataset_factory.get_dataset(
@@ -171,82 +189,64 @@ class Activater():
             labels = slim.one_hot_encoding(
                 labels, dataset.num_classes)
             batch_queue = slim.prefetch_queue.prefetch_queue(
-                [images, labels], capacity=2 * micro_batch_num)
+                [images, labels], capacity=2 * gpu_num)
 
-        '''
+
         tf.get_variable_scope()._reuse =tf.AUTO_REUSE
-        for i in range(self.micro_batch_num):
-            loss, output, scopes = self.model_fn(None,self.model_name)
-            losses.append(loss)
-            outputs.append(output[-1])
+        for i in range(gpu_num):
+            with tf.device("gpu:{}".format(i)):
+                loss, output, scopes = self.model_fn(batch_queue,self.model_name)
+                losses.append(loss)
+                outputs.append(output[-1])
         self.scopes = scopes
-        with tf.variable_scope(self.scopes[-1]):
-            new_loss =tf.add_n(losses)/self.micro_batch_num
-            new_loss = tf.reduce_mean(new_loss,name="final_loss")
+        with tf.device("gpu:2"):
+            new_loss =tf.add_n(losses,name="final_loss")/gpu_num
+            new_loss = tf.reduce_mean(new_loss)
             new_outputs = tf.add_n(outputs)
         #self.train_op = tf.train.AdamOptimizer(learning_rate=0.2, beta1=0.9, beta2=0.98, epsilon=1e-9).minimize(new_loss)
-        self.train_op = tf.train.MomentumOptimizer(learning_rate=0.01,momentum=0.9).minimize(new_loss)
+            #self.train_op = tf.train.GradientDescentOptimizer(learning_rate=0.01).minimize(new_loss,colocate_gradients_with_ops=True)
+        self.train_op =tf.train.MomentumOptimizer(learning_rate=0.01, momentum=0.9).minimize(new_loss,colocate_gradients_with_ops=True)
+
+        graph = tf.get_default_graph()
+        accurate_num = get_tensors(graph,"top_accuracy")
+        print("accurate_num:",accurate_num)
+        #accurate_num = tf.reduce_sum(tf.add_n(accurate_num))
+        accurate_num = tf.reduce_sum(accurate_num[0])
+
+
 
         init = tf.global_variables_initializer()
-        self.graph = tf.get_default_graph()
-        self.gdef = tf.get_default_graph().as_graph_def(add_shapes=True)
-    def change_model(self,index,config):
+        config = tf.ConfigProto()
+        config.allow_soft_placement = True
+        sess = tf.Session(config=config)
+        sess.run(init)
+        coord = tf.train.Coordinator()
+        threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+        start_time = time.time()
 
-        with open( self.model_name+"/"+str(index)+"/init_graph.pbtxt", "w") as f:
-            f.write(str(tf.get_default_graph().as_graph_def(add_shapes=True)))
+        for i in range(10000000):
+            _,loss,accuracy_num = sess.run([self.train_op,new_loss,accurate_num])
+            #top5accuracy = accuracy_num / (gpu_num * batch_size)
+            top5accuracy = accuracy_num / ( batch_size)
 
-        strategy = {}
-        assignment = {}
-        for i in range(int(len(config)//2)):
-            indexs = config[i*2]
-            _strategy = config[i*2+1]
-            for j in range(indexs[0],indexs[1]+1,1):
-                assignment[self.scopes[j]] = _strategy
+            if i%10==0:
+                end_time = time.time()
+                print("Step:{},Loss:{},top5 accuracy:{},per_step_time:{}".format(i,loss,top5accuracy,(end_time-start_time)/10))
+                start_time = time.time()
 
-        '''
-        for i in range(len(self.scopes)):
-            if i <8:
-                assignment[self.scopes[i]] = [0,0]
-            elif i<14:
-                assignment[self.scopes[i]] = [1,1]
-            else:
-                assignment[self.scopes[i]] = [2,3]
+            gap = top5accuracy*100 // 5 * 5
+            if gap not in recorded_accuracy5:
+                global_end_time = time.time()
+                recorded_accuracy5.append(gap)
+                print("achieveing {}% at the first time, concreate top5 accuracy: {}%. time slot: {}, duration: {}s\n".format(gap,top5accuracy*100,global_end_time,global_end_time-global_start_time),flush=True)
+                with open("vgg_dp3_time_record.txt","a+") as f:
+                    f.write("achieveing {}% at the first time, concreate top5 accuracy: {}%. time slot: {}, duration: {}s\n".format(gap,top5accuracy*100,global_end_time,global_end_time-global_start_time))
 
-        '''
-        op_scope_dict = self.compute_operation_scope_dict()
-        for op in op_scope_dict:
-            place = [0]*len(self.devices)
-            decision = assignment[op_scope_dict[op]]
-            #for i in range(decision[0],decision[1]+1,1):
-            for i in decision:
-                place[i] = 1
-            strategy[op] = [1]+place
-        for op in self.graph.get_operations():
-            if op.name not in strategy.keys():
-                print(op.name)
-                strategy[op.name] = [1]+place
-        import pickle as pkl
-        with open( self.model_name+"/"+str(index)+"/strategy.pkl","wb") as f:
-            pkl.dump(strategy,f)
-        import tge
 
-        # options = [[0, 1], [1, 0], [0, 2], [2, 0], [1, 1]]
-        # strategy = { node.name: [np.random.randint(0, 2)] + options[np.random.randint(0, len(options))] for node in gdef.node }
 
-        g = (tge.TGE(self.gdef, self.devices)
-             .custom(strategy)
-             #.replace_placeholder(self.batch_size)
-             .use_collective()
-             .compile()
-             .get_result()
-             )
-        with open( self.model_name+"/"+str(index)+"/modified.pbtxt", "w") as fo:
-            fo.write(pbtf.MessageToString(g))
 
     def activate_unit(self):
-        for i in range(1,len(four_strategies)+1,1):
-            self.build_model()
-            self.change_model(i,four_strategies[i-1])
+        self.build_model()
 if __name__ == '__main__':
     config_dict =dict()
     if os.path.exists("vgg_config.json"):

@@ -3,18 +3,21 @@ import tensorflow as tf
 import json
 import os
 import time
+import sys
+
+sys.path.append('../')
+sys.path.append('../../')
 from tensorflow.core.framework import graph_pb2
 from tensorflow.core.framework import step_stats_pb2
 import google.protobuf.text_format as pbtf
 import pickle as pkl
-import sys
 from tensorflow.python.client import timeline
 from tensorflow.distribute.cluster_resolver import TFConfigClusterResolver
 from datasets import dataset_factory
 from preprocessing import preprocessing_factory
 import tf_slim as slim
 
-sys.path.append('../')
+
 import multiprocessing as mp
 arg_prefix=sys.argv[1]
 
