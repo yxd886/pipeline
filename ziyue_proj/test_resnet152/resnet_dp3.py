@@ -228,7 +228,7 @@ class Activater():
         for i in range(10000000):
             _,loss,accuracy_num = sess.run([self.train_op,new_loss,accurate_num])
             #top5accuracy = accuracy_num / (gpu_num * batch_size)
-            accurate_times.append(accurate_num)
+            accurate_times.append(accuracy_num)
             total_times.append(batch_size)
 
 
