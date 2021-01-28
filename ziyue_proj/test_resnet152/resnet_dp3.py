@@ -239,6 +239,8 @@ class Activater():
 
             if sum(total_times)==64:
                 top5accuracy = sum(accurate_times) / 64
+                print("Step:{},Loss:{},accuracy:{}".format(i,loss,top5accuracy))
+
 
                 gap = top5accuracy*100 // 5 * 5
                 if gap not in recorded_accuracy5:
