@@ -253,6 +253,7 @@ def resnet_v2_152(inputs,
                    global_pool=global_pool, output_stride=output_stride,
                    include_root_block=True, spatial_squeeze=spatial_squeeze,
                    reuse=reuse, scope=scope)
+  net = tf.squeeze(net, [1, 2], name="squzzezd")
 
   def fn(args):
       y, index = args
@@ -263,6 +264,7 @@ def resnet_v2_152(inputs,
 
   top_accuracy = tf.reduce_sum(acc_array, name="top_accuracy")
   with tf.variable_scope(scopes[-1]):
+
     loss = tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=net)
     loss = tf.reduce_mean(loss)
     outputs[-1]=loss
