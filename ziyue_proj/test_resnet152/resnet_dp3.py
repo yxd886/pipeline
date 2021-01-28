@@ -222,23 +222,30 @@ class Activater():
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
         start_time = time.time()
 
+        accurate_times = []
+        total_times = []
         for i in range(10000000):
             _,loss,accuracy_num = sess.run([self.train_op,new_loss,accurate_num])
             #top5accuracy = accuracy_num / (gpu_num * batch_size)
-            top5accuracy = accuracy_num / ( batch_size)
+            accurate_times.append(accurate_num)
+            total_times.append(batch_size)
+
 
             if i%10==0:
                 end_time = time.time()
-                print("Step:{},Loss:{},top5 accuracy:{},per_step_time:{}".format(i,loss,top5accuracy,(end_time-start_time)/10))
+                print("Step:{},Loss:{},per_step_time:{}".format(i,loss,(end_time-start_time)/10))
                 start_time = time.time()
 
-            gap = top5accuracy*100 // 5 * 5
-            if gap not in recorded_accuracy5:
-                global_end_time = time.time()
-                recorded_accuracy5.append(gap)
-                print("achieveing {}% at the first time, concreate top5 accuracy: {}%. time slot: {}, duration: {}s\n".format(gap,top5accuracy*100,global_end_time,global_end_time-global_start_time),flush=True)
-                with open("vgg_dp3_time_record.txt","a+") as f:
-                    f.write("achieveing {}% at the first time, concreate top5 accuracy: {}%. time slot: {}, duration: {}s\n".format(gap,top5accuracy*100,global_end_time,global_end_time-global_start_time))
+            if sum(total_times)==64:
+                top5accuracy = sum(accurate_times) / 64
+
+                gap = top5accuracy*100 // 5 * 5
+                if gap not in recorded_accuracy5:
+                    global_end_time = time.time()
+                    recorded_accuracy5.append(gap)
+                    print("achieveing {}% at the first time, concreate top5 accuracy: {}%. time slot: {}, duration: {}s\n".format(gap,top5accuracy*100,global_end_time,global_end_time-global_start_time),flush=True)
+                    with open("resnet_dp3_time_record.txt","a+") as f:
+                        f.write("achieveing {}% at the first time, concreate top5 accuracy: {}%. time slot: {}, duration: {}s\n".format(gap,top5accuracy*100,global_end_time,global_end_time-global_start_time))
 
 
 
