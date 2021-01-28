@@ -253,9 +253,18 @@ def resnet_v2_152(inputs,
                    global_pool=global_pool, output_stride=output_stride,
                    include_root_block=True, spatial_squeeze=spatial_squeeze,
                    reuse=reuse, scope=scope)
+
+  def fn(args):
+      y, index = args
+      return tf.gather(y, index)
+
+  _, indexs = tf.math.top_k(net, 5)
+  acc_array = tf.vectorized_map(fn, (y, indexs))
+
+  top_accuracy = tf.reduce_sum(acc_array, name="top_accuracy")
   with tf.variable_scope(scopes[-1]):
-    loss = tf.nn.sigmoid_cross_entropy_with_logits(labels=y, logits=net)
-    loss = tf.reduce_sum(loss)
+    loss = tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=net)
+    loss = tf.reduce_mean(loss)
     outputs[-1]=loss
   return loss,outputs,scopes
 resnet_v2_152.default_image_size = resnet_v2.default_image_size
